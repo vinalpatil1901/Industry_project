@@ -7,6 +7,7 @@ import MoneyManagement from './components/MoneyManagement';
 import Marketplace from './components/Marketplace';
 import LiveChat from './components/LiveChat';
 import LoginPage from './components/LoginPage';
+import StudyPet from './components/StudyPet';
 import { evaluateCareers } from './utils/careerEvaluation';
 
 const MONEY_SECTIONS = {
@@ -137,7 +138,7 @@ export default function App() {
       : 'College Recommendation';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50/85 text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
       <Sidebar
         activeArea={navigation.area}
         activeSection={navigation.section}
@@ -218,6 +219,7 @@ export default function App() {
           </div>
         </main>
       </div>
+      <StudyPet area={navigation.area} />
     </div>
   );
 }
