@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
-import { ChevronRight, Menu } from 'lucide-react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { ChevronRight, LogOut, Menu, UserRound } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import CareerSurvey from './components/CareerSurvey';
 import CollegeRecommendation from './components/CollegeRecommendation';
 import MoneyManagement from './components/MoneyManagement';
 import Marketplace from './components/Marketplace';
+import LiveChat from './components/LiveChat';
+import LoginPage from './components/LoginPage';
 import { evaluateCareers } from './utils/careerEvaluation';
 
 const MONEY_SECTIONS = {
@@ -19,6 +21,17 @@ const MARKETPLACE_SECTIONS = {
   purchases: 'My Purchases',
   listings: 'My Listings',
 };
+const SESSION_STORAGE_KEY = 'campus360-session-v1';
+const SmartStudy = lazy(() => import('./components/SmartStudy'));
+
+function loadSession() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY));
+    return saved?.name && typeof saved.isGuest === 'boolean' ? saved : null;
+  } catch {
+    return null;
+  }
+}
 
 function readNavigation() {
   const hash = window.location.hash.replace('#', '');
@@ -33,6 +46,14 @@ function readNavigation() {
     return { area: 'marketplace', section: MARKETPLACE_SECTIONS[section] ? section : 'dashboard' };
   }
 
+  if (hash === 'community-live-chat') {
+    return { area: 'community', section: 'live-chat' };
+  }
+
+  if (hash === 'study-smart-study') {
+    return { area: 'study', section: 'smart-study' };
+  }
+
   return {
     area: 'career',
     section: hash === 'career-colleges' ? 'colleges' : 'survey',
@@ -40,6 +61,7 @@ function readNavigation() {
 }
 
 export default function App() {
+  const [session, setSession] = useState(loadSession);
   const [navigation, setNavigation] = useState(readNavigation);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -64,7 +86,7 @@ export default function App() {
   }, []);
 
   const navigate = (area, section) => {
-    const hash = area === 'money' ? `money-${section}` : area === 'marketplace' ? `marketplace-${section}` : `career-${section}`;
+    const hash = area === 'money' ? `money-${section}` : area === 'marketplace' ? `marketplace-${section}` : area === 'community' ? `community-${section}` : area === 'study' ? `study-${section}` : `career-${section}`;
     window.history.pushState(null, '', `#${hash}`);
     setNavigation({ area, section });
     setIsMobileOpen(false);
@@ -78,12 +100,34 @@ export default function App() {
     setSelectedCareer(evaluated[0]);
   };
 
+  const handleAuthenticate = (nextSession) => {
+    const safeSession = { name: nextSession.name, email: nextSession.email, isGuest: nextSession.isGuest };
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(safeSession));
+    setSession(safeSession);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    setSession(null);
+    setIsMobileOpen(false);
+  };
+
+  if (!session) {
+    return <LoginPage onAuthenticate={handleAuthenticate} />;
+  }
+
   const isMoneyArea = navigation.area === 'money';
   const isMarketplaceArea = navigation.area === 'marketplace';
+  const isCommunityArea = navigation.area === 'community';
+  const isStudyArea = navigation.area === 'study';
   const breadcrumbSection = isMoneyArea
     ? MONEY_SECTIONS[navigation.section]
     : isMarketplaceArea
       ? MARKETPLACE_SECTIONS[navigation.section]
+    : isCommunityArea
+      ? 'Live Community Chat'
+    : isStudyArea
+      ? 'SmartStudy'
     : navigation.section === 'survey'
       ? 'Career Survey'
       : 'College Recommendation';
@@ -120,10 +164,18 @@ export default function App() {
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="font-bold text-slate-800">Campus360</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isMarketplaceArea ? 'Marketplace' : 'Career'}</span>
+              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isMarketplaceArea ? 'Marketplace' : isCommunityArea ? 'Community' : isStudyArea ? 'SmartStudy' : 'Career'}</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
               <span className="font-bold text-blue-600">{breadcrumbSection}</span>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-lg bg-slate-100 px-2.5 py-1.5 sm:flex">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-white"><UserRound className="h-3.5 w-3.5" /></span>
+              <span className="max-w-28 truncate text-xs font-bold text-slate-700">{session.name}</span>
+              {session.isGuest && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800">Guest</span>}
+            </div>
+            <button type="button" onClick={handleSignOut} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700" title="Sign out"><LogOut className="h-3.5 w-3.5" /><span className="hidden sm:inline">Sign out</span></button>
           </div>
         </header>
 
@@ -132,6 +184,10 @@ export default function App() {
             <MoneyManagement activeSection={navigation.section} />
           ) : isMarketplaceArea ? (
             <Marketplace activeSection={navigation.section} onNavigate={(section) => navigate('marketplace', section)} />
+          ) : isCommunityArea ? (
+            <LiveChat selectedCareer={selectedCareer} />
+          ) : isStudyArea ? (
+            <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
           ) : navigation.section === 'survey' ? (
             <CareerSurvey
               surveyData={surveyData}

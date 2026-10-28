@@ -2,11 +2,13 @@ import { useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
+  BrainCircuit,
   ClipboardCheck,
   Compass,
   GraduationCap,
   LibraryBig,
   ListChecks,
+  MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
   PiggyBank,
@@ -33,6 +35,14 @@ const marketplaceLinks = [
   { id: 'dashboard', label: 'Marketplace Dashboard', icon: Store },
   { id: 'purchases', label: 'My Purchases', icon: LibraryBig },
   { id: 'listings', label: 'My Listings', icon: ListChecks },
+];
+
+const communityLinks = [
+  { id: 'live-chat', label: 'Live Community Chat', icon: MessageCircle },
+];
+
+const studyLinks = [
+  { id: 'smart-study', label: 'SmartStudy', icon: BrainCircuit },
 ];
 
 function SectionHeader({ title, expanded, onClick }) {
@@ -65,6 +75,8 @@ export default function Sidebar({
   const [isCareerExpanded, setIsCareerExpanded] = useState(true);
   const [isMoneyExpanded, setIsMoneyExpanded] = useState(true);
   const [isMarketplaceExpanded, setIsMarketplaceExpanded] = useState(true);
+  const [isCommunityExpanded, setIsCommunityExpanded] = useState(true);
+  const [isStudyExpanded, setIsStudyExpanded] = useState(true);
 
   const navigate = (area, section) => onNavigate(area, section);
 
@@ -164,6 +176,16 @@ export default function Sidebar({
               </button>
               {isCareerExpanded && careerLinks.map((item) => iconButton('career', item))}
               <div className="my-1 h-px w-8 bg-slate-800" />
+              <button type="button" onClick={() => setIsCommunityExpanded(!isCommunityExpanded)} title="Toggle Community section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
+                {isCommunityExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {isCommunityExpanded && communityLinks.map((item) => iconButton('community', item))}
+              <div className="my-1 h-px w-8 bg-slate-800" />
+              <button type="button" onClick={() => setIsStudyExpanded(!isStudyExpanded)} title="Toggle SmartStudy section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
+                {isStudyExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {isStudyExpanded && studyLinks.map((item) => iconButton('study', item))}
+              <div className="my-1 h-px w-8 bg-slate-800" />
               <button type="button" onClick={() => setIsMoneyExpanded(!isMoneyExpanded)} title="Toggle Money Management section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
                 {isMoneyExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
@@ -179,6 +201,16 @@ export default function Sidebar({
               <div className="space-y-1">
                 <SectionHeader title="Career" expanded={isCareerExpanded} onClick={() => setIsCareerExpanded(!isCareerExpanded)} />
                 {isCareerExpanded && <div className="space-y-1 pt-0.5">{careerLinks.map((item) => textButton('career', item))}</div>}
+              </div>
+
+              <div className="border-t border-slate-800 pt-3">
+                <SectionHeader title="Community" expanded={isCommunityExpanded} onClick={() => setIsCommunityExpanded(!isCommunityExpanded)} />
+                {isCommunityExpanded && <div className="space-y-1 pt-0.5">{communityLinks.map((item) => textButton('community', item))}</div>}
+              </div>
+
+              <div className="border-t border-slate-800 pt-3">
+                <SectionHeader title="SmartStudy" expanded={isStudyExpanded} onClick={() => setIsStudyExpanded(!isStudyExpanded)} />
+                {isStudyExpanded && <div className="space-y-1 pt-0.5">{studyLinks.map((item) => textButton('study', item))}</div>}
               </div>
 
               <div className="border-t border-slate-800 pt-3">
