@@ -1344,39 +1344,48 @@ function initNavigation() {
     'challenges': 'Savings Challenges'
   };
 
+  const showSection = (targetSec) => {
+    if (!targetSec || !document.getElementById(`${targetSec}-section`)) return;
+
+    // Update sidebar active class
+    navItems.forEach(item => {
+      const isActive = item.dataset.section === targetSec;
+      item.classList.toggle('active', isActive);
+      item.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
+
+    // Update breadcrumb
+    if (breadcrumbCurrent) {
+      breadcrumbCurrent.textContent = sectionTitles[targetSec] || 'Dashboard';
+    }
+
+    // Switch active section with a smooth transition.
+    sections.forEach(sec => {
+      const isTarget = sec.id === `${targetSec}-section`;
+      sec.classList.toggle('hidden', !isTarget);
+      sec.classList.toggle('active', isTarget);
+      sec.setAttribute('aria-hidden', String(!isTarget));
+    });
+
+    // If mobile sidebar is open, close it after a selection.
+    if (sidebar && sidebar.classList.contains('open')) {
+      sidebar.classList.remove('open');
+      sidebarToggle?.setAttribute('aria-expanded', 'false');
+    }
+
+    // Re-trigger layout/chart updates if necessary.
+    if (targetSec === 'expense') renderCategoryChart();
+  };
+
   navItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const targetSec = item.dataset.section;
-      if (!targetSec) return;
-
-      // Update sidebar active class
-      navItems.forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-
-      // Update breadcrumb
-      if (breadcrumbCurrent) {
-        breadcrumbCurrent.textContent = sectionTitles[targetSec] || 'Dashboard';
-      }
-
-      // Switch active section with smooth transition
-      sections.forEach(sec => {
-        if (sec.id === `${targetSec}-section`) {
-          sec.classList.remove('hidden');
-          sec.classList.add('active');
-        } else {
-          sec.classList.add('hidden');
-          sec.classList.remove('active');
-        }
-      });
-
-      // If mobile sidebar open, close it
-      if (sidebar && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
-      }
-
-      // Re-trigger layout/chart updates if necessary
-      if (targetSec === 'expense') {
-        renderCategoryChart();
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-current', item.classList.contains('active') ? 'page' : 'false');
+    item.addEventListener('click', () => showSection(item.dataset.section));
+    item.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showSection(item.dataset.section);
       }
     });
   });
@@ -1385,26 +1394,41 @@ function initNavigation() {
   const moneySectionToggle = document.getElementById('moneyManagementSectionToggle');
   const moneyNavMenu = document.getElementById('moneyManagementNavMenu');
   if (moneySectionToggle && moneyNavMenu) {
-    moneySectionToggle.addEventListener('click', () => {
-      const isCollapsed = moneyNavMenu.classList.toggle('collapsed');
+    const setMenuCollapsed = (isCollapsed) => {
+      moneyNavMenu.classList.toggle('collapsed', isCollapsed);
       moneySectionToggle.classList.toggle('collapsed', isCollapsed);
       moneySectionToggle.setAttribute('title', isCollapsed ? 'Expand Money Management' : 'Minimize Money Management');
+      moneySectionToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    };
+
+    setMenuCollapsed(false);
+    moneySectionToggle.addEventListener('click', () => setMenuCollapsed(!moneyNavMenu.classList.contains('collapsed')));
+    moneySectionToggle.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setMenuCollapsed(!moneyNavMenu.classList.contains('collapsed'));
+      }
     });
   }
 
   // Sidebar Minimize / Maximize (Collapse Button)
   const collapseBtn = document.getElementById('sidebarCollapseBtn');
   if (collapseBtn && sidebar) {
-    collapseBtn.addEventListener('click', () => {
-      const isMin = sidebar.classList.toggle('collapsed');
+    const setSidebarCollapsed = (isMin) => {
+      sidebar.classList.toggle('collapsed', isMin);
       collapseBtn.setAttribute('title', isMin ? 'Maximize Sidebar' : 'Minimize Sidebar');
+      collapseBtn.setAttribute('aria-label', isMin ? 'Maximize Sidebar' : 'Minimize Sidebar');
+      collapseBtn.setAttribute('aria-pressed', String(isMin));
       if (isMin) {
         sidebar.style.width = '';
       } else {
         const savedWidth = localStorage.getItem('student_sidebar_width') || '270px';
         sidebar.style.width = savedWidth;
       }
-    });
+    };
+
+    setSidebarCollapsed(false);
+    collapseBtn.addEventListener('click', () => setSidebarCollapsed(!sidebar.classList.contains('collapsed')));
   }
 
   // Adjustable / Resizable Sidebar Handle
@@ -1425,6 +1449,9 @@ function initNavigation() {
         sidebar.style.width = newWidth + 'px';
         if (sidebar.classList.contains('collapsed') && newWidth > 110) {
           sidebar.classList.remove('collapsed');
+          collapseBtn?.setAttribute('title', 'Minimize Sidebar');
+          collapseBtn?.setAttribute('aria-label', 'Minimize Sidebar');
+          collapseBtn?.setAttribute('aria-pressed', 'false');
         }
       };
 
@@ -1453,8 +1480,10 @@ function initNavigation() {
 
   // Mobile sidebar toggle
   if (sidebarToggle && sidebar) {
+    sidebarToggle.setAttribute('aria-expanded', 'false');
     sidebarToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
+      const isOpen = sidebar.classList.toggle('open');
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
     });
   }
 }

@@ -1,0 +1,14 @@
+{
+  "name": "industry-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Student Money Management Platform",
+  "scripts": {
+    "dev": "vite \"Money Management\"",
+    "build": "vite build \"Money Management\"",
+    "preview": "vite preview \"Money Management\""
+  },
+  "devDependencies": {
+    "vite": "^8.3.5"
+  }
+}
