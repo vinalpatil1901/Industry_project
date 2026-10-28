@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import mammoth from 'mammoth/mammoth.browser';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 import {
@@ -20,7 +19,7 @@ GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const MAX_FILES = 15;
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
-const SUPPORTED_EXTENSIONS = new Set(['pdf', 'docx', 'txt', 'md', 'csv', 'json']);
+const SUPPORTED_EXTENSIONS = new Set(['pdf', 'txt', 'md', 'csv', 'json']);
 const STOP_WORDS = new Set('about after again also among because before being between both could each every from have here into just like more most other over should some such than that their these they this those through under using very was were what when where which while will with would your you are and the for not but can has had its our out all any may one two three how why who'.split(' '));
 
 function extensionOf(fileName) {
@@ -43,10 +42,6 @@ async function textFromFile(file) {
       text.push(content.items.map((item) => item.str).join(' '));
     }
     return text.join('\n');
-  }
-  if (extension === 'docx') {
-    const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-    return result.value;
   }
   return file.text();
 }
@@ -109,7 +104,7 @@ export default function SmartStudy() {
     const oversized = candidates.filter((file) => file.size > MAX_FILE_SIZE);
     const accepted = candidates.filter((file) => SUPPORTED_EXTENSIONS.has(extensionOf(file.name)) && file.size <= MAX_FILE_SIZE).slice(0, MAX_FILES);
     if (!accepted.length) {
-      setError('Choose PDF, DOCX, TXT, MD, CSV, or JSON files smaller than 15 MB.');
+      setError('Choose PDF, TXT, MD, CSV, or JSON files smaller than 15 MB.');
       return;
     }
     if (unsupported.length || oversized.length || candidates.length > MAX_FILES) setError(`Added ${accepted.length} supported file${accepted.length === 1 ? '' : 's'}. Unsupported, oversized, or extra files were skipped.`);
@@ -156,7 +151,7 @@ export default function SmartStudy() {
 
       {!analysis && <div className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-          <div className="mb-5"><h2 className="text-xl font-bold text-slate-900">Add study material</h2><p className="mt-1 text-sm text-slate-500">PDF, DOCX, TXT, MD, CSV, or JSON · up to 15 files · 15 MB each.</p></div>
+          <div className="mb-5"><h2 className="text-xl font-bold text-slate-900">Add study material</h2><p className="mt-1 text-sm text-slate-500">PDF, TXT, MD, CSV, or JSON · up to 15 files · 15 MB each.</p></div>
           <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} className="grid min-h-56 place-items-center rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50/60 p-6 text-center transition hover:border-violet-400 hover:bg-violet-50">
             <div><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white text-violet-600 shadow-sm"><Upload className="h-6 w-6" /></span><h3 className="mt-4 font-bold text-slate-800">Drop files here</h3><p className="mt-1 text-xs text-slate-500">or choose files and folders from your device</p><div className="mt-4 flex flex-wrap justify-center gap-2"><input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" onChange={(event) => addFiles(event.target.files)} className="hidden" /><input ref={folderInputRef} type="file" multiple webkitdirectory="" directory="" onChange={(event) => addFiles(event.target.files)} className="hidden" /><button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-lg bg-violet-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-violet-700">Choose files</button><button type="button" onClick={() => folderInputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3.5 py-2 text-xs font-bold text-violet-700 hover:bg-violet-50"><FolderUp className="h-4 w-4" />Choose folder</button></div></div>
           </div>
