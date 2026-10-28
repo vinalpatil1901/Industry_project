@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ChevronRight, LogOut, Menu, UserRound } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import CareerSurvey from './components/CareerSurvey';
@@ -15,6 +15,7 @@ const MONEY_SECTIONS = {
   challenges: 'Savings Challenges',
 };
 const SESSION_STORAGE_KEY = 'campus360-session-v1';
+const SmartStudy = lazy(() => import('./components/SmartStudy'));
 
 function loadSession() {
   try {
@@ -35,6 +36,10 @@ function readNavigation() {
 
   if (hash === 'community-live-chat') {
     return { area: 'community', section: 'live-chat' };
+  }
+
+  if (hash === 'study-smart-study') {
+    return { area: 'study', section: 'smart-study' };
   }
 
   return {
@@ -69,7 +74,7 @@ export default function App() {
   }, []);
 
   const navigate = (area, section) => {
-    const hash = area === 'money' ? `money-${section}` : area === 'community' ? `community-${section}` : `career-${section}`;
+    const hash = area === 'money' ? `money-${section}` : area === 'community' ? `community-${section}` : area === 'study' ? `study-${section}` : `career-${section}`;
     window.history.pushState(null, '', `#${hash}`);
     setNavigation({ area, section });
     setIsMobileOpen(false);
@@ -101,10 +106,13 @@ export default function App() {
 
   const isMoneyArea = navigation.area === 'money';
   const isCommunityArea = navigation.area === 'community';
+  const isStudyArea = navigation.area === 'study';
   const breadcrumbSection = isMoneyArea
     ? MONEY_SECTIONS[navigation.section]
     : isCommunityArea
       ? 'Live Community Chat'
+    : isStudyArea
+      ? 'SmartStudy'
     : navigation.section === 'survey'
       ? 'Career Survey'
       : 'College Recommendation';
@@ -141,7 +149,7 @@ export default function App() {
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="font-bold text-slate-800">Campus360</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isCommunityArea ? 'Community' : 'Career'}</span>
+              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isCommunityArea ? 'Community' : isStudyArea ? 'SmartStudy' : 'Career'}</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
               <span className="font-bold text-blue-600">{breadcrumbSection}</span>
             </div>
@@ -161,6 +169,8 @@ export default function App() {
             <MoneyManagement activeSection={navigation.section} />
           ) : isCommunityArea ? (
             <LiveChat selectedCareer={selectedCareer} />
+          ) : isStudyArea ? (
+            <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
           ) : navigation.section === 'survey' ? (
             <CareerSurvey
               surveyData={surveyData}
