@@ -14,12 +14,29 @@ import { ALL_COLLEGES } from '../data/collegesList';
 export default function CollegeRecommendation({ 
   selectedCareer, 
   careerResults, 
-  onSelectCareer
+  onSelectCareer,
+  onGoToSurvey,
 }) {
   const [locationInput, setLocationInput] = useState("");
   const [isLocating, setIsLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [selectedCollegeModal, setSelectedCollegeModal] = useState(null);
+
+  // Recommendations depend on the student's own survey response. Never use a
+  // default career track here: that would show unrelated colleges as if they
+  // were personalised recommendations.
+  if (!careerResults?.length || !selectedCareer) {
+    return (
+      <section className="grid min-h-[360px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-8 text-center">
+        <div className="max-w-md">
+          <Info className="mx-auto h-10 w-10 text-slate-400" />
+          <h2 className="mt-4 text-lg font-extrabold text-slate-600">Complete your survey</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Your college recommendations will appear here after you complete the career survey.</p>
+          <button type="button" onClick={onGoToSurvey} className="mt-5 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">Go to career survey</button>
+        </div>
+      </section>
+    );
+  }
 
   // Handle "Use Current Location" button
   const handleUseCurrentLocation = () => {

@@ -9,6 +9,7 @@ import LiveChat from './components/LiveChat';
 import LoginPage from './components/LoginPage';
 import StudyPet from './components/StudyPet';
 import { evaluateCareers } from './utils/careerEvaluation';
+import { supabase } from './lib/supabase';
 
 const MONEY_SECTIONS = {
   expense: 'Daily Expense Tracker',
@@ -36,6 +37,13 @@ function loadSession() {
   } catch {
     return null;
   }
+}
+
+function toAppSession(authSession) {
+  const user = authSession.user;
+  const email = user.email || '';
+  const displayName = user.user_metadata?.full_name || email.split('@')[0] || 'Campus360 Student';
+  return { id: user.id, name: displayName, email, isGuest: false };
 }
 
 function readNavigation() {
@@ -67,6 +75,7 @@ function readNavigation() {
 
 export default function App() {
   const [session, setSession] = useState(loadSession);
+  const [authReady, setAuthReady] = useState(false);
   const [navigation, setNavigation] = useState(readNavigation);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -90,6 +99,53 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    if (!session?.id) {
+      setSurveyData(null);
+      setCareerResults(null);
+      setSelectedCareer(null);
+      return undefined;
+    }
+    supabase
+      .from('career_survey_responses')
+      .select('answers')
+      .eq('user_id', session.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active || error || !data?.answers) return;
+        const evaluated = evaluateCareers(data.answers);
+        setSurveyData(data.answers);
+        setCareerResults(evaluated);
+        setSelectedCareer(evaluated[0] || null);
+      });
+    return () => { active = false; };
+  }, [session?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    const applyAuthSession = (authSession) => {
+      if (!mounted || !authSession) return;
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      setSession(toAppSession(authSession));
+    };
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session) applyAuthSession(data.session);
+      setAuthReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, authSession) => {
+      if (authSession) applyAuthSession(authSession);
+      else if (mounted) setSession(loadSession());
+    });
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const navigate = (area, section) => {
     const hash = area === 'money' ? `money-${section}` : area === 'marketplace' ? `marketplace-${section}` : area === 'community' ? `community-${section}` : area === 'study' ? `study-${section}` : `career-${section}`;
     window.history.pushState(null, '', `#${hash}`);
@@ -98,11 +154,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSaveSurvey = (formData) => {
+  const handleSaveSurvey = async (formData) => {
     setSurveyData(formData);
     const evaluated = evaluateCareers(formData);
     setCareerResults(evaluated);
     setSelectedCareer(evaluated[0]);
+    if (session?.id) {
+      await supabase.from('career_survey_responses').insert({ user_id: session.id, answers: formData });
+    }
   };
 
   const handleAuthenticate = (nextSession) => {
@@ -111,11 +170,16 @@ export default function App() {
     setSession(safeSession);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    if (!session?.isGuest) await supabase.auth.signOut();
     localStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
     setIsMobileOpen(false);
   };
+
+  if (!authReady) {
+    return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Loading Campus360…</div>;
+  }
 
   if (!session) {
     return <LoginPage onAuthenticate={handleAuthenticate} />;
@@ -194,6 +258,7 @@ export default function App() {
                 activeSection={navigation.section}
                 onNavigate={(section) => navigate('marketplace', section)}
                 workspaceOffset={isDesktop ? (isCollapsed ? 68 : sidebarWidth) : 0}
+                user={session.isGuest ? null : session}
               />
             ) : isCommunityArea ? (
               <LiveChat selectedCareer={selectedCareer} />

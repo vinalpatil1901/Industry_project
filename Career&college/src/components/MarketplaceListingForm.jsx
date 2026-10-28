@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Upload, X } from 'lucide-react';
-
-const CURRENT_USER = { id: 'student-demo', name: 'Dinesh Shah', college: 'Campus360 Student' };
 const CATEGORIES = ['Notes', 'Previous Year Question Papers (PYQs)', 'Study Guides', 'Used Books'];
 const CONDITIONS = ['Like New', 'Good', 'Acceptable'];
 const fieldClass = 'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100';
@@ -22,10 +20,11 @@ function Field({ label, error, wide = false, children }) {
 
 export default function MarketplaceListingForm({ initial, onClose, onSave, workspaceOffset = 0 }) {
   const [form, setForm] = useState(() => initial || {
-    title: '', category: 'Notes', subject: '', course: '', college: '',
+    title: '', category: 'Notes', subject: '', course: '', semester: '', college: '',
     description: '', type: 'PDF', price: '', condition: 'Good', contact: '', fileName: '', imageName: '',
   });
   const [errors, setErrors] = useState({});
+  const [selectedFile, setSelectedFile] = useState(null);
   const physical = form.category === 'Used Books' || form.type === 'Physical used book';
 
   const setField = (key, value) => {
@@ -41,12 +40,13 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
       return;
     }
     setField(key, file.name);
+    setSelectedFile(file);
   };
 
   const submit = (event) => {
     event.preventDefault();
     const nextErrors = {};
-    ['title', 'subject', 'course', 'description'].forEach((key) => {
+    ['title', 'subject', 'course', 'semester', 'description'].forEach((key) => {
       if (!String(form[key]).trim()) nextErrors[key] = 'Required';
     });
     if (form.price === '' || Number(form.price) < 0) nextErrors.price = 'Enter a valid price.';
@@ -58,12 +58,8 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
     onSave({
       ...initial,
       ...form,
-      id: initial?.id || crypto.randomUUID(),
       price: Number(form.price),
-      seller: initial?.seller || CURRENT_USER,
-      createdAt: initial?.createdAt || new Date().toISOString().slice(0, 10),
-      status: initial?.status || 'Published',
-      sample: physical ? '' : `Preview available for ${form.title}.`,
+      file: selectedFile,
     });
   };
 
@@ -97,6 +93,9 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
             </Field>
             <Field label="Course" error={errors.course}>
               <input value={form.course} onChange={(event) => setField('course', event.target.value)} className={fieldClass} placeholder="e.g. B.Tech CSE" />
+            </Field>
+            <Field label="Semester" error={errors.semester}>
+              <input value={form.semester} onChange={(event) => setField('semester', event.target.value)} className={fieldClass} placeholder="e.g. 5" inputMode="numeric" />
             </Field>
             <Field label="College name (optional)">
               <input value={form.college} onChange={(event) => setField('college', event.target.value)} className={fieldClass} placeholder="e.g. Campus360 College" />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Compass, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound, Users } from 'lucide-react';
 import studyMonkey from '../assets/study-monkey.webp';
+import { supabase } from '../lib/supabase';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,6 +14,9 @@ export default function LoginPage({ onAuthenticate }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', agreed: false });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
 
   const isSignUp = mode === 'signup';
   const updateField = (field, value) => {
@@ -20,7 +24,7 @@ export default function LoginPage({ onAuthenticate }) {
     setErrors((current) => ({ ...current, [field]: '' }));
   };
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     const nextErrors = {};
     if (isSignUp && form.name.trim().length < 2) nextErrors.name = 'Please enter your name (at least 2 characters).';
@@ -33,8 +37,20 @@ export default function LoginPage({ onAuthenticate }) {
     }
 
     const email = form.email.trim().toLowerCase();
-    const defaultName = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-    onAuthenticate({ name: isSignUp ? form.name.trim() : defaultName, email, isGuest: false });
+    setIsSubmitting(true);
+    setAuthError('');
+    setAuthMessage('');
+    const result = isSignUp
+      ? await supabase.auth.signUp({ email, password: form.password, options: { data: { full_name: form.name.trim() } } })
+      : await supabase.auth.signInWithPassword({ email, password: form.password });
+    setIsSubmitting(false);
+    if (result.error) {
+      setAuthError(result.error.message);
+      return;
+    }
+    if (isSignUp && !result.data.session) {
+      setAuthMessage('Account created. Check your email to confirm your account, then sign in.');
+    }
   };
 
   const continueAsGuest = () => onAuthenticate({ name: 'Guest Explorer', email: '', isGuest: true });
@@ -83,7 +99,9 @@ export default function LoginPage({ onAuthenticate }) {
               <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-700">Password</span><div className="relative"><LockKeyhole className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" /><input type={showPassword ? 'text' : 'password'} value={form.password} onChange={(event) => updateField('password', event.target.value)} autoComplete={isSignUp ? 'new-password' : 'current-password'} placeholder="At least 8 characters" className={`w-full rounded-xl border bg-white py-2.5 pl-10 pr-11 text-sm outline-none transition focus:ring-2 ${errors.password ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'}`} /><button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2.5 top-2.5 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div><FieldError>{errors.password}</FieldError></label>
               {isSignUp && <label className="flex cursor-pointer items-start gap-2.5 pt-1"><input type="checkbox" checked={form.agreed} onChange={(event) => updateField('agreed', event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><span className="text-xs leading-5 text-slate-600">I agree to use Campus360 respectfully and keep community spaces safe.</span></label>}
               {isSignUp && <FieldError>{errors.agreed}</FieldError>}
-              <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">{isSignUp ? 'Create account' : 'Sign in'}<ArrowRight className="h-4 w-4" /></button>
+              {authError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{authError}</p>}
+              {authMessage && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">{authMessage}</p>}
+              <button type="submit" disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}<ArrowRight className="h-4 w-4" /></button>
             </form>
             <div className="my-6 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />or<span className="h-px flex-1 bg-slate-200" /></div>
             <button type="button" onClick={continueAsGuest} className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><Users className="h-4 w-4" />Continue as a guest</button>

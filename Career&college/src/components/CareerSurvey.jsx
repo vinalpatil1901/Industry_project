@@ -86,8 +86,8 @@ export default function CareerSurvey({
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      onSaveSurvey(formData);
+    setTimeout(async () => {
+      await onSaveSurvey(formData);
       setIsSubmitting(false);
       setIsFormVisible(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
