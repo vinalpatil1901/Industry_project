@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   MapPin, 
   Navigation, 
@@ -9,7 +9,7 @@ import {
   Info,
   Globe
 } from 'lucide-react';
-import { ALL_COLLEGES } from '../data/collegesList';
+import { supabase } from '../lib/supabase';
 
 export default function CollegeRecommendation({ 
   selectedCareer, 
@@ -21,22 +21,58 @@ export default function CollegeRecommendation({
   const [isLocating, setIsLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [selectedCollegeModal, setSelectedCollegeModal] = useState(null);
+  const [colleges, setColleges] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const hasCompletedSurvey = Boolean(careerResults?.length && selectedCareer);
 
   // Recommendations depend on the student's own survey response. Never use a
   // default career track here: that would show unrelated colleges as if they
   // were personalised recommendations.
-  if (!careerResults?.length || !selectedCareer) {
-    return (
-      <section className="grid min-h-[360px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-8 text-center">
-        <div className="max-w-md">
-          <Info className="mx-auto h-10 w-10 text-slate-400" />
-          <h2 className="mt-4 text-lg font-extrabold text-slate-600">Complete your survey</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">Your college recommendations will appear here after you complete the career survey.</p>
-          <button type="button" onClick={onGoToSurvey} className="mt-5 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">Go to career survey</button>
-        </div>
-      </section>
-    );
-  }
+  useEffect(() => {
+    if (!hasCompletedSurvey) {
+      setIsLoading(false);
+      return undefined;
+    }
+    let active = true;
+    setIsLoading(true);
+    setLoadError('');
+    supabase
+      .from('colleges')
+      .select('*')
+      .eq('is_published', true)
+      .order('name')
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          setLoadError(error.code === 'PGRST205' || error.code === '42P01'
+            ? 'College data has not been set up in Supabase yet.'
+            : 'College recommendations could not be loaded.');
+          setColleges([]);
+        } else {
+          setColleges((data || []).map((college) => ({
+            id: college.id,
+            name: college.name,
+            city: college.city,
+            state: college.state || '',
+            country: college.country || 'India',
+            type: college.institution_type || 'Institution',
+            rating: college.rating ? `${college.rating} ★` : 'Not rated',
+            nirfRank: college.ranking || 'Ranking unavailable',
+            programs: Array.isArray(college.programs) ? college.programs : [],
+            careerTracks: college.career_tags || [],
+            avgPackage: college.average_package || 'Not provided',
+            highestPackage: college.highest_package || 'Not provided',
+            fees: college.annual_fees || 'Not provided',
+            description: college.description || 'No description provided.',
+            region: `${college.city} ${college.state || ''} ${college.country || ''}`,
+            keywords: [],
+          })));
+        }
+        setIsLoading(false);
+      });
+    return () => { active = false; };
+  }, [hasCompletedSurvey]);
 
   // Handle "Use Current Location" button
   const handleUseCurrentLocation = () => {
@@ -47,23 +83,17 @@ export default function CollegeRecommendation({
       navigator.geolocation.getCurrentPosition(
         () => {
           setIsLocating(false);
-          const detectedCity = "Mumbai, Maharashtra, India";
-          setLocationInput("Mumbai");
-          setLocationMessage(`Auto-detected location: ${detectedCity} (via Browser Geolocation)`);
+          setLocationMessage('Location permission granted. Type your city to filter published colleges.');
         },
         () => {
           setIsLocating(false);
-          const fallbackCity = "Mumbai";
-          setLocationInput(fallbackCity);
-          setLocationMessage(`Location set to ${fallbackCity} (Nearest Education Hub)`);
+          setLocationMessage('Location could not be detected. Type your city to filter published colleges.');
         },
         { timeout: 3000 }
       );
     } else {
       setIsLocating(false);
-      const fallbackCity = "New Delhi";
-      setLocationInput(fallbackCity);
-      setLocationMessage(`Location set to ${fallbackCity}`);
+      setLocationMessage('Location is unavailable. Type your city to filter published colleges.');
     }
   };
 
@@ -73,10 +103,10 @@ export default function CollegeRecommendation({
     const rawQuery = locationInput.trim().toLowerCase();
 
     // Base candidate pool prioritizing the selected career track
-    const trackPrioritized = ALL_COLLEGES.filter((col) => 
-      col.careerTracks.includes(track) || col.careerTracks.includes("tech")
+    const trackPrioritized = colleges.filter((col) =>
+      col.careerTracks.includes(track)
     );
-    const candidatePool = [...trackPrioritized, ...ALL_COLLEGES.filter(c => !trackPrioritized.some(p => p.id === c.id))];
+    const candidatePool = [...trackPrioritized, ...colleges.filter(c => !trackPrioritized.some(p => p.id === c.id))];
 
     if (!rawQuery) {
       // Default: Return top 5 colleges for the active track
@@ -140,7 +170,20 @@ export default function CollegeRecommendation({
         matchStatus: `Showing top premier universities accessible for "${locationInput.trim()}"`
       };
     }
-  }, [selectedCareer, locationInput]);
+  }, [selectedCareer, locationInput, colleges]);
+
+  if (!hasCompletedSurvey) {
+    return (
+      <section className="grid min-h-[360px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-8 text-center">
+        <div className="max-w-md">
+          <Info className="mx-auto h-10 w-10 text-slate-400" />
+          <h2 className="mt-4 text-lg font-extrabold text-slate-600">Complete your survey</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Your college recommendations will appear here after you complete the career survey.</p>
+          <button type="button" onClick={onGoToSurvey} className="mt-5 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">Go to career survey</button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div className="w-full space-y-6 animate-fadeIn">
@@ -254,6 +297,8 @@ export default function CollegeRecommendation({
         </div>
 
         <div className="space-y-4">
+          {isLoading && <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500">Loading college recommendations…</div>}
+          {!isLoading && suggestedColleges.length === 0 && <div className="rounded-xl border border-dashed border-slate-300 bg-slate-100/70 p-8 text-center"><p className="font-bold text-slate-600">{loadError || 'No published colleges match this career track yet.'}</p><p className="mt-1 text-sm text-slate-500">Only colleges added and published in Supabase appear here.</p></div>}
           {suggestedColleges.map((college) => (
             <div
               key={college.id}

@@ -786,23 +786,15 @@ function initSavingsSection() {
 // 4. Section 3: Future Investment
 // ==========================================================================
 const INVEST_STORAGE_KEY = 'student_money_investment_v2';
-const INITIAL_CASH = 10000;
+const INITIAL_CASH = 0;
 
 let investmentState = {
   cash: INITIAL_CASH,
-  portfolio: {
-    'CLOUD': { shares: 3, avgPrice: 850.00 }
-  },
+  portfolio: {},
   history: []
 };
 
-const SIMULATED_STOCKS = [
-  { symbol: 'TECH', name: 'TechCorp AI Solutions', price: 620.00, change: 2.4 },
-  { symbol: 'SOLAR', name: 'GreenEnergy India', price: 340.50, change: -1.2 },
-  { symbol: 'CLOUD', name: 'CampusCloud Enterprise', price: 890.00, change: 3.8 },
-  { symbol: 'FINTECH', name: 'NextGen StudentPay', price: 415.20, change: 0.9 },
-  { symbol: 'FOOD', name: 'QuickBite Campus Logistics', price: 180.00, change: -0.5 }
-];
+const SIMULATED_STOCKS = [];
 
 let portfolioChartInstance = null;
 let priceTickInterval = null;
@@ -876,6 +868,10 @@ function initInvestSection() {
   if (raw) {
     try {
       investmentState = JSON.parse(raw);
+      if (investmentState?.portfolio?.CLOUD) {
+        investmentState = { cash: INITIAL_CASH, portfolio: {}, history: [] };
+        saveInvestState();
+      }
     } catch (e) {
       console.error(e);
       saveInvestState();
@@ -1112,12 +1108,10 @@ function initInvestSection() {
   // Reset Balance
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (confirm('Reset virtual portfolio and cash balance back to initial ₹10,000?')) {
+      if (confirm('Clear this virtual portfolio?')) {
         investmentState = {
           cash: INITIAL_CASH,
-          portfolio: {
-            'CLOUD': { shares: 3, avgPrice: 850.00 }
-          },
+          portfolio: {},
           history: []
         };
         saveInvestState();

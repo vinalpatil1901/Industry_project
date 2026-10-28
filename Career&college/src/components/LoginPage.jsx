@@ -17,6 +17,7 @@ export default function LoginPage({ onAuthenticate }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authMessage, setAuthMessage] = useState('');
+  const [canCreateAccount, setCanCreateAccount] = useState(false);
 
   const isSignUp = mode === 'signup';
   const updateField = (field, value) => {
@@ -40,17 +41,36 @@ export default function LoginPage({ onAuthenticate }) {
     setIsSubmitting(true);
     setAuthError('');
     setAuthMessage('');
+    setCanCreateAccount(false);
     const result = isSignUp
       ? await supabase.auth.signUp({ email, password: form.password, options: { data: { full_name: form.name.trim() } } })
       : await supabase.auth.signInWithPassword({ email, password: form.password });
     setIsSubmitting(false);
     if (result.error) {
-      setAuthError(result.error.message);
+      if (!isSignUp && result.error.message.toLowerCase().includes('invalid login credentials')) {
+        setAuthError('This email/password is not a verified Campus360 account yet. The previous version of the app did not create Supabase accounts. Create your account first, then confirm the email we send you.');
+        setCanCreateAccount(true);
+      } else {
+        setAuthError(result.error.message);
+      }
       return;
     }
     if (isSignUp && !result.data.session) {
       setAuthMessage('Account created. Check your email to confirm your account, then sign in.');
     }
+  };
+
+  const resendConfirmation = async () => {
+    const email = form.email.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) {
+      setAuthError('Enter your email address first.');
+      return;
+    }
+    setIsSubmitting(true);
+    setAuthError('');
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    setIsSubmitting(false);
+    setAuthMessage(error ? error.message : 'Confirmation email sent. Open it, then return here to sign in.');
   };
 
   const continueAsGuest = () => onAuthenticate({ name: 'Guest Explorer', email: '', isGuest: true });
@@ -90,8 +110,8 @@ export default function LoginPage({ onAuthenticate }) {
           <div className="mx-auto max-w-md">
             <div className="mb-8"><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">{isSignUp ? 'Create your account' : 'Welcome back'}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{isSignUp ? 'Save your progress and personalise your Campus360 experience.' : 'Sign in to continue your learning journey.'}</p></div>
             <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
-              <button type="button" onClick={() => { setMode('signin'); setErrors({}); }} className={`rounded-lg px-3 py-2 text-sm font-bold transition ${!isSignUp ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Sign in</button>
-              <button type="button" onClick={() => { setMode('signup'); setErrors({}); }} className={`rounded-lg px-3 py-2 text-sm font-bold transition ${isSignUp ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Create account</button>
+              <button type="button" onClick={() => { setMode('signin'); setErrors({}); setAuthError(''); setAuthMessage(''); setCanCreateAccount(false); }} className={`rounded-lg px-3 py-2 text-sm font-bold transition ${!isSignUp ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Sign in</button>
+              <button type="button" onClick={() => { setMode('signup'); setErrors({}); setAuthError(''); setAuthMessage(''); setCanCreateAccount(false); }} className={`rounded-lg px-3 py-2 text-sm font-bold transition ${isSignUp ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Create account</button>
             </div>
             <form noValidate onSubmit={submit} className="space-y-4">
               {isSignUp && <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-700">Full name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" /><input value={form.name} onChange={(event) => updateField('name', event.target.value)} autoComplete="name" placeholder="Your name" className={`w-full rounded-xl border bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:ring-2 ${errors.name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'}`} /></div><FieldError>{errors.name}</FieldError></label>}
@@ -99,8 +119,8 @@ export default function LoginPage({ onAuthenticate }) {
               <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-700">Password</span><div className="relative"><LockKeyhole className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" /><input type={showPassword ? 'text' : 'password'} value={form.password} onChange={(event) => updateField('password', event.target.value)} autoComplete={isSignUp ? 'new-password' : 'current-password'} placeholder="At least 8 characters" className={`w-full rounded-xl border bg-white py-2.5 pl-10 pr-11 text-sm outline-none transition focus:ring-2 ${errors.password ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'}`} /><button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2.5 top-2.5 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div><FieldError>{errors.password}</FieldError></label>
               {isSignUp && <label className="flex cursor-pointer items-start gap-2.5 pt-1"><input type="checkbox" checked={form.agreed} onChange={(event) => updateField('agreed', event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><span className="text-xs leading-5 text-slate-600">I agree to use Campus360 respectfully and keep community spaces safe.</span></label>}
               {isSignUp && <FieldError>{errors.agreed}</FieldError>}
-              {authError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{authError}</p>}
-              {authMessage && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">{authMessage}</p>}
+              {authError && <div role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"><p>{authError}</p>{canCreateAccount && <button type="button" onClick={() => { setMode('signup'); setAuthError(''); setCanCreateAccount(false); }} className="mt-2 font-extrabold underline underline-offset-2">Create a Supabase account</button>}</div>}
+              {authMessage && <div role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><p>{authMessage}</p>{isSignUp && <button type="button" onClick={resendConfirmation} disabled={isSubmitting} className="mt-2 font-extrabold underline underline-offset-2 disabled:opacity-60">Resend confirmation email</button>}</div>}
               <button type="submit" disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}<ArrowRight className="h-4 w-4" /></button>
             </form>
             <div className="my-6 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />or<span className="h-px flex-1 bg-slate-200" /></div>

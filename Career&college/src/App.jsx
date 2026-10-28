@@ -261,7 +261,7 @@ export default function App() {
                 user={session.isGuest ? null : session}
               />
             ) : isCommunityArea ? (
-              <LiveChat selectedCareer={selectedCareer} />
+              <LiveChat selectedCareer={selectedCareer} user={session.isGuest ? null : session} />
             ) : isStudyArea ? (
               <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
             ) : navigation.section === 'survey' ? (

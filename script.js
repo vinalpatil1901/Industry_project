@@ -46,15 +46,6 @@ let activeCategoryFilter = 'All';
 let isCurrentMonthOnlyFilter = false;
 let categoryChartInstance = null;
 
-// Initial sample data to populate dashboard on first launch
-const INITIAL_SAMPLE_EXPENSES = [
-  { amount: 140, category: 'Food', date: getTodayStr(), description: 'Campus Canteen Lunch' },
-  { amount: 50, category: 'Transport', date: getTodayStr(), description: 'Metro Smart Card Ride' },
-  { amount: 450, category: 'Study', date: getTodayStr(), description: 'Data Structures Textbook' },
-  { amount: 280, category: 'Entertainment', date: getTodayStr(), description: 'Weekend Cinema Ticket' },
-  { amount: 95, category: 'Other', date: getTodayStr(), description: 'Stationery & Highlighter Set' }
-];
-
 function loadExpenses() {
   const raw = localStorage.getItem(EXPENSES_STORAGE_KEY);
   if (raw) {
@@ -62,11 +53,11 @@ function loadExpenses() {
       expenses = JSON.parse(raw);
     } catch (e) {
       console.error('Failed to parse expenses', e);
-      expenses = [...INITIAL_SAMPLE_EXPENSES];
+      expenses = [];
       saveExpenses();
     }
   } else {
-    expenses = [...INITIAL_SAMPLE_EXPENSES];
+    expenses = [];
     saveExpenses();
   }
 }
@@ -522,12 +513,6 @@ function exportExpensesToCSV() {
 const SAVINGS_GOALS_KEY = 'student_money_goals';
 let savingsGoals = [];
 
-const INITIAL_SAMPLE_GOALS = [
-  { id: 1, title: 'Cloud Certification Exam', amount: 3500, saved: 2100, date: '2026-12-15' },
-  { id: 2, title: 'Hostel Semester Emergency Cushion', amount: 5000, saved: 3250, date: '2026-11-30' },
-  { id: 3, title: 'Ergonomic Coding Keyboard', amount: 2000, saved: 800, date: '2026-10-31' }
-];
-
 function initSavingsSection() {
   const resultEl = document.getElementById('savingsResult');
   const withInterestEl = document.getElementById('savingsWithInterest');
@@ -546,11 +531,11 @@ function initSavingsSection() {
     try {
       savingsGoals = JSON.parse(raw);
     } catch (e) {
-      savingsGoals = [...INITIAL_SAMPLE_GOALS];
+      savingsGoals = [];
       saveGoals();
     }
   } else {
-    savingsGoals = [...INITIAL_SAMPLE_GOALS];
+    savingsGoals = [];
     saveGoals();
   }
 
@@ -750,23 +735,15 @@ function initSavingsSection() {
 // 4. Section 3: Investment & Virtual Trading
 // ==========================================================================
 const INVEST_STORAGE_KEY = 'student_money_investment_v2';
-const INITIAL_CASH = 10000;
+const INITIAL_CASH = 0;
 
 let investmentState = {
   cash: INITIAL_CASH,
-  portfolio: {
-    'CLOUD': { shares: 3, avgPrice: 850.00 }
-  },
+  portfolio: {},
   history: []
 };
 
-const SIMULATED_STOCKS = [
-  { symbol: 'TECH', name: 'TechCorp AI Solutions', price: 620.00, change: 2.4 },
-  { symbol: 'SOLAR', name: 'GreenEnergy India', price: 340.50, change: -1.2 },
-  { symbol: 'CLOUD', name: 'CampusCloud Enterprise', price: 890.00, change: 3.8 },
-  { symbol: 'FINTECH', name: 'NextGen StudentPay', price: 415.20, change: 0.9 },
-  { symbol: 'FOOD', name: 'QuickBite Campus Logistics', price: 180.00, change: -0.5 }
-];
+const SIMULATED_STOCKS = [];
 
 let portfolioChartInstance = null;
 let priceTickInterval = null;
@@ -788,6 +765,10 @@ function initInvestSection() {
   if (raw) {
     try {
       investmentState = JSON.parse(raw);
+      if (investmentState?.portfolio?.CLOUD) {
+        investmentState = { cash: INITIAL_CASH, portfolio: {}, history: [] };
+        saveInvestState();
+      }
     } catch (e) {
       console.error(e);
       saveInvestState();
@@ -1024,12 +1005,10 @@ function initInvestSection() {
   // Reset Balance
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (confirm('Reset virtual portfolio and cash balance back to initial ₹10,000?')) {
+      if (confirm('Clear this virtual portfolio?')) {
         investmentState = {
           cash: INITIAL_CASH,
-          portfolio: {
-            'CLOUD': { shares: 3, avgPrice: 850.00 }
-          },
+          portfolio: {},
           history: []
         };
         saveInvestState();

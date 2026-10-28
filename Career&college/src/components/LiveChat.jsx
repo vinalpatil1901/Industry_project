@@ -1,235 +1,123 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  Check,
-  CheckCheck,
-  FileText,
-  ImagePlus,
-  MessageCircle,
-  Paperclip,
-  Send,
-  UserPlus,
-  Users,
-  X,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, MessageCircle, Send, Users } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-const STORAGE_KEY = 'campus360-community-chat-v1';
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-const seniorMembers = [
-  { id: 'ananya', name: 'Ananya Sharma', role: 'ML Engineer · 2023 graduate', expertise: 'AI & Machine Learning', initials: 'AS', color: 'bg-violet-600', online: true },
-  { id: 'rohan', name: 'Rohan Mehta', role: 'Software Engineer · 2022 graduate', expertise: 'Cloud & Full-Stack', initials: 'RM', color: 'bg-blue-600', online: true },
-  { id: 'meera', name: 'Meera Iyer', role: 'Product Designer · 2021 graduate', expertise: 'Product Design & UX', initials: 'MI', color: 'bg-rose-600', online: false },
-];
-
-const makeSeedState = (careerTitle) => ({
-  selectedChannel: 'career',
-  connectedIds: [],
-  channels: {
-    career: {
-      name: careerTitle,
-      description: `Career-specific doubts, roadmaps, and guidance for ${careerTitle}.`,
-      unread: 2,
-      messages: [
-        { id: 'seed-1', author: 'Ananya Sharma', initials: 'AS', color: 'bg-violet-600', senior: true, text: `Welcome to the ${careerTitle} community. Share your doubt with enough context and seniors will help you with the next step.`, time: '10:02 AM', read: true },
-        { id: 'seed-2', author: 'Karan Patel', initials: 'KP', color: 'bg-orange-500', text: 'What is the best way to build a strong project portfolio while studying?', time: '10:11 AM', read: true },
-        { id: 'seed-3', author: 'Ananya Sharma', initials: 'AS', color: 'bg-violet-600', senior: true, text: 'Start with one focused project, document the problem and your decisions, then improve it with feedback. Quality matters more than the number of projects.', time: '10:16 AM', read: true },
-      ],
-    },
-    lounge: {
-      name: 'Student Lounge',
-      description: 'Meet students, exchange opportunities, and make connections across careers.',
-      unread: 1,
-      messages: [
-        { id: 'seed-4', author: 'Riya Singh', initials: 'RS', color: 'bg-emerald-600', text: 'Anyone joining an open-source beginner group this weekend?', time: '9:48 AM', read: true },
-        { id: 'seed-5', author: 'Rohan Mehta', initials: 'RM', color: 'bg-blue-600', senior: true, text: 'I can share a simple first-contribution checklist if that would help.', time: '9:52 AM', read: true },
-      ],
-    },
-    opportunities: {
-      name: 'Opportunities',
-      description: 'Internships, events, study groups, and career opportunities.',
-      unread: 0,
-      messages: [
-        { id: 'seed-6', author: 'Campus360 Team', initials: 'C3', color: 'bg-slate-700', senior: true, text: 'Remember to verify every opportunity before sharing personal information or files.', time: 'Yesterday', read: true },
-      ],
-    },
-  },
-});
-
-function loadChat(careerTitle) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved?.channels) {
-      return {
-        ...saved,
-        channels: {
-          ...saved.channels,
-          career: { ...saved.channels.career, name: careerTitle, description: `Career-specific doubts, roadmaps, and guidance for ${careerTitle}.` },
-        },
-      };
-    }
-  } catch {
-    // Fall back to safe starter data when old browser storage is malformed.
-  }
-  return makeSeedState(careerTitle);
+function formatTime(timestamp) {
+  return new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp));
 }
 
-function formatTime() {
-  return new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' }).format(new Date());
+function initials(name) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C3';
 }
 
-function Avatar({ initials, color, small = false }) {
-  return <span className={`flex shrink-0 items-center justify-center rounded-full font-bold text-white ${color} ${small ? 'h-7 w-7 text-[10px]' : 'h-9 w-9 text-xs'}`}>{initials}</span>;
-}
-
-export default function LiveChat({ selectedCareer }) {
-  const careerTitle = selectedCareer?.title || 'Career Guidance';
-  const [chat, setChat] = useState(() => loadChat(careerTitle));
+export default function LiveChat({ selectedCareer, user }) {
+  const [channels, setChannels] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [activeChannelId, setActiveChannelId] = useState(null);
   const [draft, setDraft] = useState('');
-  const [attachment, setAttachment] = useState(null);
-  const [uploadError, setUploadError] = useState('');
-  const fileInputRef = useRef(null);
-  const endRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    try {
-      // Keep browser storage small. Image previews remain visible in the active
-      // session; after a refresh the attachment is retained as a file card.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(chat, (key, value) => key === 'preview' ? undefined : value));
-    } catch {
-      // A full browser storage area must never break the chat interface.
-    }
-  }, [chat]);
-
-  const storedActiveChannel = chat.channels[chat.selectedChannel];
-  const activeChannel = chat.selectedChannel === 'career'
-    ? { ...storedActiveChannel, name: careerTitle, description: `Career-specific doubts, roadmaps, and guidance for ${careerTitle}.` }
-    : storedActiveChannel;
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [chat.selectedChannel, activeChannel?.messages.length]);
-
-  const selectChannel = (channelId) => {
-    setChat((current) => ({
-      ...current,
-      selectedChannel: channelId,
-      channels: { ...current.channels, [channelId]: { ...current.channels[channelId], unread: 0 } },
-    }));
-  };
-
-  const handleAttachment = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    setUploadError('');
-    if (!file) return;
-    if (file.size > MAX_FILE_SIZE) {
-      setUploadError('Files must be 5 MB or smaller.');
+  const loadCommunity = useCallback(async () => {
+    if (!user?.id) {
+      setChannels([]);
+      setMessages([]);
+      setLoading(false);
       return;
     }
-    const base = { name: file.name, type: file.type, size: file.size, isImage: file.type.startsWith('image/') };
-    if (!base.isImage) {
-      setAttachment(base);
+    setLoading(true);
+    setError('');
+    const { data: channelRows, error: channelError } = await supabase
+      .from('community_channels')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at');
+    if (channelError) {
+      setError(channelError.code === 'PGRST205' || channelError.code === '42P01'
+        ? 'The Community database schema has not been applied yet.'
+        : 'Could not load community discussions.');
+      setChannels([]);
+      setMessages([]);
+      setLoading(false);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setAttachment({ ...base, preview: String(reader.result) });
-    reader.onerror = () => setUploadError('That image could not be read. Please try another file.');
-    reader.readAsDataURL(file);
-  };
+    setChannels(channelRows || []);
+    setActiveChannelId((current) => current && channelRows?.some((channel) => channel.id === current) ? current : channelRows?.[0]?.id || null);
+    setLoading(false);
+  }, [user?.id]);
 
-  const sendMessage = () => {
-    const cleanDraft = draft.trim();
-    if (!cleanDraft && !attachment) return;
-    const channelId = chat.selectedChannel;
-    const message = { id: crypto.randomUUID(), author: 'You', initials: 'YO', color: 'bg-blue-600', text: cleanDraft, attachment, time: formatTime(), mine: true, read: false };
-    setChat((current) => ({
-      ...current,
-      channels: {
-        ...current.channels,
-        [channelId]: {
-          ...current.channels[channelId],
-          messages: [...current.channels[channelId].messages, message],
-        },
-      },
-    }));
+  const loadMessages = useCallback(async () => {
+    if (!activeChannelId || !user?.id) return;
+    const { data: messageRows, error: messageError } = await supabase
+      .from('community_messages')
+      .select('*')
+      .eq('channel_id', activeChannelId)
+      .order('created_at');
+    if (messageError) {
+      setError('Could not load messages for this channel.');
+      return;
+    }
+    const authorIds = [...new Set((messageRows || []).map((message) => message.author_id))];
+    const { data: profiles } = authorIds.length
+      ? await supabase.from('profiles').select('id, display_name').in('id', authorIds)
+      : { data: [] };
+    const names = new Map((profiles || []).map((profile) => [profile.id, profile.display_name]));
+    setMessages((messageRows || []).map((message) => ({
+      ...message,
+      authorName: names.get(message.author_id) || 'Campus360 member',
+    })));
+  }, [activeChannelId, user?.id]);
+
+  useEffect(() => { loadCommunity(); }, [loadCommunity]);
+  useEffect(() => { loadMessages(); }, [loadMessages]);
+
+  useEffect(() => {
+    if (!activeChannelId) return undefined;
+    const channel = supabase.channel(`community-${activeChannelId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_messages', filter: `channel_id=eq.${activeChannelId}` }, loadMessages)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeChannelId, loadMessages]);
+
+  const activeChannel = useMemo(() => channels.find((channel) => channel.id === activeChannelId), [channels, activeChannelId]);
+
+  const sendMessage = async () => {
+    const body = draft.trim();
+    if (!body || !user?.id || !activeChannelId) return;
     setDraft('');
-    setAttachment(null);
-    window.setTimeout(() => {
-      setChat((current) => ({
-        ...current,
-        channels: {
-          ...current.channels,
-          [channelId]: {
-            ...current.channels[channelId],
-            messages: current.channels[channelId].messages.map((item) => item.id === message.id ? { ...item, read: true } : item),
-          },
-        },
-      }));
-    }, 900);
+    const { error: sendError } = await supabase.from('community_messages').insert({
+      channel_id: activeChannelId,
+      author_id: user.id,
+      body,
+    });
+    if (sendError) {
+      setDraft(body);
+      setError(`Could not send message: ${sendError.message}`);
+      return;
+    }
+    loadMessages();
   };
 
-  const connectWith = (member) => {
-    setChat((current) => current.connectedIds.includes(member.id) ? current : { ...current, connectedIds: [...current.connectedIds, member.id] });
-  };
+  if (loading) return <div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white"><div className="flex items-center gap-2 text-sm font-semibold text-slate-500"><Loader2 className="h-5 w-5 animate-spin" />Loading community…</div></div>;
 
-  const askSenior = (member) => {
-    selectChannel('career');
-    setDraft(`Hi ${member.name.split(' ')[0]}, I need guidance about ${careerTitle}. My doubt is: `);
-  };
+  if (!user?.id) return <Empty title="Sign in to join the community" text="Guest sessions cannot read or post community discussions." />;
+  if (error && !channels.length) return <Empty title="Community unavailable" text={error} />;
+  if (!channels.length) return <Empty title="No community channels yet" text="Community channels will appear here when they are created in Supabase." />;
 
-  return (
-    <section className="mx-auto max-w-7xl">
-      <div className="grid min-h-[680px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[235px_minmax(0,1fr)_275px]">
-        <aside className="border-b border-slate-200 bg-slate-50 p-3 lg:border-b-0 lg:border-r">
-          <div className="mb-3 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">Channels</div>
-          <div className="space-y-1">
-            {Object.entries(chat.channels).map(([id, channel]) => (
-              <button key={id} type="button" onClick={() => selectChannel(id)} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${chat.selectedChannel === id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70'}`}>
-                <MessageCircle className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate font-semibold">{id === 'career' ? careerTitle : channel.name}</span>
-                {channel.unread > 0 && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${chat.selectedChannel === id ? 'bg-white text-blue-700' : 'bg-blue-600 text-white'}`}>{channel.unread}</span>}
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-col">
-          <header className="border-b border-slate-200 px-4 py-4 sm:px-5">
-            <div className="flex items-center justify-between gap-3"><h2 className="font-bold text-slate-900">{activeChannel.name}</h2><span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Live discussion</span></div>
-          </header>
-
-          <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-4 sm:p-5">
-            {activeChannel.messages.map((message) => (
-              <article key={message.id} className={`flex max-w-[92%] gap-2.5 ${message.mine ? 'ml-auto flex-row-reverse' : ''}`}>
-                <Avatar initials={message.initials} color={message.color} small />
-                <div className={`min-w-0 rounded-2xl px-3.5 py-2.5 shadow-sm ${message.mine ? 'rounded-tr-sm bg-blue-600 text-white' : 'rounded-tl-sm border border-slate-200 bg-white text-slate-700'}`}>
-                  {!message.mine && <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-700">{message.author}{message.senior && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-violet-700">Senior</span>}</div>}
-                  {message.text && <p className="whitespace-pre-wrap text-sm leading-5">{message.text}</p>}
-                  {message.attachment && <div className={`mt-2 overflow-hidden rounded-lg border ${message.mine ? 'border-blue-400/60 bg-blue-500/30' : 'border-slate-200 bg-slate-50'}`}>
-                    {message.attachment.isImage && message.attachment.preview ? <img src={message.attachment.preview} alt={message.attachment.name} className="max-h-56 w-full object-cover" /> : <div className="flex items-center gap-2 p-2.5"><FileText className="h-5 w-5 shrink-0" /><span className="truncate text-xs font-semibold">{message.attachment.name}</span></div>}
-                  </div>}
-                  <div className={`mt-1.5 flex items-center gap-1 text-[10px] ${message.mine ? 'justify-end text-blue-100' : 'text-slate-400'}`}>{message.time}{message.mine && (message.read ? <CheckCheck className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />)}</div>
-                </div>
-              </article>
-            ))}
-            <div ref={endRef} />
-          </div>
-
-          <div className="border-t border-slate-200 bg-white p-3 sm:p-4">
-            {attachment && <div className="mb-2 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-800"><FileText className="h-4 w-4" /><span className="min-w-0 flex-1 truncate font-semibold">{attachment.name}</span><button type="button" onClick={() => setAttachment(null)} className="rounded p-1 hover:bg-blue-100" aria-label="Remove attachment"><X className="h-4 w-4" /></button></div>}
-            {uploadError && <p className="mb-2 text-xs font-medium text-rose-600">{uploadError}</p>}
-            <div className="flex items-end gap-2"><input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleAttachment} className="hidden" /><button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 hover:text-blue-600" aria-label="Attach a file or photo"><Paperclip className="h-5 w-5" /></button><button type="button" onClick={() => fileInputRef.current?.click()} className="hidden rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 sm:block" aria-label="Attach a photo"><ImagePlus className="h-5 w-5" /></button><textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } }} rows="1" placeholder={`Ask a doubt about ${activeChannel.name}...`} className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100" /><button type="button" onClick={sendMessage} disabled={!draft.trim() && !attachment} className="rounded-xl bg-blue-600 p-3 text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send message"><Send className="h-5 w-5" /></button></div>
-            <p className="mt-2 pl-1 text-[10px] text-slate-400">Enter to send · Shift + Enter for a new line · Images and documents up to 5 MB.</p>
-          </div>
-        </div>
-
-        <aside className="border-t border-slate-200 bg-white p-4 lg:border-l lg:border-t-0">
-          <div className="mb-4 flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" /><h2 className="text-sm font-bold text-slate-900">Seniors & graduates</h2></div>
-          <div className="space-y-3">
-            {seniorMembers.map((member) => { const connected = chat.connectedIds.includes(member.id); return <div key={member.id} className="rounded-xl border border-slate-200 p-3"><div className="flex gap-2.5"><div className="relative"><Avatar initials={member.initials} color={member.color} /><span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${member.online ? 'bg-emerald-500' : 'bg-slate-300'}`} /></div><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-800">{member.name}</p><p className="mt-0.5 text-[11px] leading-4 text-slate-500">{member.role}</p></div></div><div className="mt-3 flex gap-2"><button type="button" onClick={() => askSenior(member)} className="flex-1 rounded-lg bg-slate-100 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Ask doubt</button><button type="button" onClick={() => connectWith(member)} className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>{connected ? <Check className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}{connected ? 'Connected' : 'Connect'}</button></div></div>; })}
-          </div>
-        </aside>
+  return <section className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    {error && <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{error}</div>}
+    <div className="grid min-h-[620px] lg:grid-cols-[240px_minmax(0,1fr)]">
+      <aside className="border-b border-slate-200 bg-slate-50 p-3 lg:border-b-0 lg:border-r">
+        <div className="mb-3 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">Channels</div>
+        <div className="space-y-1">{channels.map((channel) => <button key={channel.id} type="button" onClick={() => setActiveChannelId(channel.id)} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${channel.id === activeChannelId ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70'}`}><MessageCircle className="h-4 w-4 shrink-0" /><span className="truncate font-semibold">{channel.name}</span></button>)}</div>
+      </aside>
+      <div className="flex min-w-0 flex-col">
+        <header className="border-b border-slate-200 px-5 py-4"><h2 className="font-bold text-slate-900">{activeChannel?.name}</h2><p className="mt-1 text-xs text-slate-500">{activeChannel?.description || `Discuss ${selectedCareer?.title || 'career and student life'} with the community.`}</p></header>
+        <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-4 sm:p-5">{messages.length ? messages.map((message) => { const mine = message.author_id === user.id; return <article key={message.id} className={`flex max-w-[92%] gap-2.5 ${mine ? 'ml-auto flex-row-reverse' : ''}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-600 text-[10px] font-bold text-white">{initials(message.authorName)}</span><div className={`min-w-0 rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'rounded-tr-sm bg-blue-600 text-white' : 'rounded-tl-sm border border-slate-200 bg-white text-slate-700'}`}><div className={`mb-1 text-[11px] font-bold ${mine ? 'text-blue-100' : 'text-slate-700'}`}>{mine ? 'You' : message.authorName}</div><p className="whitespace-pre-wrap text-sm leading-5">{message.body}</p><div className={`mt-1.5 text-right text-[10px] ${mine ? 'text-blue-100' : 'text-slate-400'}`}>{formatTime(message.created_at)}</div></div></article>; }) : <div className="grid min-h-64 place-items-center text-center"><div><Users className="mx-auto h-9 w-9 text-slate-300" /><p className="mt-3 text-sm font-bold text-slate-600">No messages yet</p><p className="mt-1 text-sm text-slate-500">Start the first real conversation in this channel.</p></div></div>}</div>
+        <div className="border-t border-slate-200 bg-white p-3 sm:p-4"><div className="flex items-end gap-2"><textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } }} rows="1" placeholder={`Ask a doubt in ${activeChannel?.name || 'this channel'}…`} className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100" /><button type="button" onClick={sendMessage} disabled={!draft.trim()} className="rounded-xl bg-blue-600 p-3 text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send message"><Send className="h-5 w-5" /></button></div></div>
       </div>
-    </section>
-  );
+    </div>
+  </section>;
 }
+
+function Empty({ title, text }) { return <section className="grid min-h-[360px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-8 text-center"><div><Users className="mx-auto h-10 w-10 text-slate-400" /><h2 className="mt-4 text-lg font-extrabold text-slate-600">{title}</h2><p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{text}</p></div></section>; }
