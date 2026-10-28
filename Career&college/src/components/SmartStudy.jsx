@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/build/pdf.mjs';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import {
   BookOpen,
   CheckCircle2,
