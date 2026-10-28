@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus360 | Student Money Management</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="brand-header">
+                    <div class="brand-info-wrap">
+                        <div class="brand-logo-icon">
+                            <i class="fas fa-compass"></i>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-name">Campus360</span>
+                            <span class="brand-tagline">Academic Platform</span>
+                        </div>
+                    </div>
+                    <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Minimize / Maximize Sidebar" aria-label="Toggle Sidebar Size">
+                        <svg class="sidebar-toggle-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                            <path class="toggle-arrow-path" d="m14 9-3 3 3 3"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Collapsible Section Header for Money Management -->
+                <div class="nav-section-header" id="moneyManagementSectionToggle" title="Minimize Money Management" role="button" tabindex="0">
+                    <span class="nav-section-title">MONEY MANAGEMENT</span>
+                    <i class="fas fa-chevron-up section-chevron" id="sectionChevron"></i>
+                </div>
+
+                <ul class="nav-menu" id="moneyManagementNavMenu">
+                    <li class="nav-item active" data-section="expense" title="Daily Expense Tracker">
+                        <div class="nav-link-content">
+                            <i class="fas fa-wallet nav-icon"></i>
+                            <span class="nav-text">Daily Expense Tracker</span>
+                        </div>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </li>
+                    <li class="nav-item" data-section="savings" title="Small Savings, Big Future">
+                        <div class="nav-link-content">
+                            <i class="fas fa-piggy-bank nav-icon"></i>
+                            <span class="nav-text">Small Savings, Big Future</span>
+                        </div>
+                        <span class="nav-badge-pill">₹ Goals</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </li>
+                    <li class="nav-item" data-section="invest" title="Investment & Virtual Trading">
+                        <div class="nav-link-content">
+                            <i class="fas fa-chart-line nav-icon"></i>
+                            <span class="nav-text">Investment & Virtual Trading</span>
+                        </div>
+                        <span class="nav-badge-pill">Live</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </li>
+                    <li class="nav-item" data-section="challenges" title="Savings Challenges">
+                        <div class="nav-link-content">
+                            <i class="fas fa-trophy nav-icon"></i>
+                            <span class="nav-text">Savings Challenges</span>
+                        </div>
+                        <span class="nav-badge-pill">Streak</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-track-card">
+                    <div class="track-header">
+                        <i class="fas fa-sparkles track-sparkle"></i>
+                        <span class="track-label">Active Recommendation Track</span>
+                    </div>
+                    <div class="track-title">Cloud Systems & Full-Stack Architect</div>
+                    <div class="track-sub">Colleges & budget filtered based on this track</div>
+                </div>
+            </div>
+
+            <!-- Resizer Handle on right border -->
+            <div class="sidebar-resizer" id="sidebarResizer" title="Drag to adjust sidebar width"></div>
+        </aside>
+
+        <!-- Main Layout Area -->
+        <div class="main-layout">
+            <!-- Top Navigation Bar -->
+            <header class="top-nav-bar">
+                <div class="top-left-content">
+                    <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <span class="bc-item">Campus360</span>
+                        <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
+                        <span class="bc-item">Money Management</span>
+                        <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
+                        <span class="bc-active" id="breadcrumbCurrent">Daily Expense Tracker</span>
+                    </nav>
+                </div>
+                <div class="top-right-content">
+                    <div class="status-evaluated-badge">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Profile Evaluated</span>
+                    </div>
+                    <div class="user-avatar-pill">
+                        <span class="avatar-circle">DS</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <main class="page-content" id="pageContent">
+
+                <!-- ==============================================
+                     SECTION 1: DAILY EXPENSE TRACKER
+                     ============================================== -->
+                <section class="content-section active" id="expense-section">
+                    <!-- Top Sub-Section Banner Card -->
+                    <div class="banner-card">
+                        <div class="banner-info">
+                            <div class="banner-eyebrow">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>SUB-SECTION 1 • EXPENSE & BUDGET TRACKING</span>
+                            </div>
+                            <h1 class="banner-title">Daily Expense Tracker</h1>
+                            <p class="banner-description">
+                                Displaying detailed daily outlays, category breakdown charts, and budget trends tailored to your student profile.
+                            </p>
+                        </div>
+                        <div class="banner-action-box">
+                            <span class="banner-action-label">Active Career Track:</span>
+                            <div class="banner-dropdown-pill">
+                                <span>Cloud Systems & Full-Stack Architect (94%)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Card -->
+                    <div class="filter-card">
+                        <div class="filter-header-row">
+                            <div class="filter-title-wrap">
+                                <i class="fas fa-filter filter-icon"></i>
+                                <span class="filter-heading">FILTER BY CATEGORY, KEYWORD OR DATE</span>
+                            </div>
+                            <span class="filter-stats-text" id="expenseStatsCounter">Showing all recorded expenses</span>
+                        </div>
+                        <div class="filter-controls-row">
+                            <div class="search-box-wrap">
+                                <i class="fas fa-search search-lens"></i>
+                                <input type="text" id="expenseSearchInput" placeholder="Type category or description (e.g. Food, Metro, Books, Cafe, Rent)..." />
+                            </div>
+                            <button type="button" class="btn-location-action" id="filterCurrentMonthBtn">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>This Month Only</span>
+                            </button>
+                        </div>
+                        <div class="quick-chips-row">
+                            <span class="chips-label">Quick Hubs:</span>
+                            <div class="chips-group" id="categoryChips">
+                                <button type="button" class="chip-item active" data-category="All">All Categories</button>
+                                <button type="button" class="chip-item" data-category="Food">Food</button>
+                                <button type="button" class="chip-item" data-category="Transport">Transport</button>
+                                <button type="button" class="chip-item" data-category="Study">Study</button>
+                                <button type="button" class="chip-item" data-category="Entertainment">Entertainment</button>
+                                <button type="button" class="chip-item" data-category="Other">Other</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric Summary Cards -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Today's Spend</span>
+                                <span class="metric-badge green">Today</span>
+                            </div>
+                            <div class="metric-value" id="dailyTotalAmount">₹0.00</div>
+                            <div class="metric-foot" id="todayDateLabel">Based on today's logged expenses</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Monthly Spend</span>
+                                <span class="metric-badge blue" id="activeMonthBadge">Current Month</span>
+                            </div>
+                            <div class="metric-value" id="monthlyTotalAmount">₹0.00</div>
+                            <div class="metric-foot" id="monthlyTotalFoot">Aggregated for active month</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Daily Average</span>
+                                <span class="metric-badge purple">Paced</span>
+                            </div>
+                            <div class="metric-value" id="dailyAverageAmount">₹0.00</div>
+                            <div class="metric-foot">Estimated student daily rate</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Logged Transactions</span>
+                                <span class="metric-badge gray" id="totalEntriesCount">0 Total</span>
+                            </div>
+                            <div class="metric-value" id="totalEntriesValue">0</div>
+                            <div class="metric-foot">Total verified student entries</div>
+                        </div>
+                    </div>
+
+                    <!-- Main Grid: Form & Chart -->
+                    <div class="content-dual-grid">
+                        <!-- Add/Edit Expense Form Card -->
+                        <div class="card-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-plus-circle panel-icon"></i>
+                                    <h2 id="formPanelTitle">Add New Expense</h2>
+                                </div>
+                                <span class="panel-tag" id="formModeTag">New Entry</span>
+                            </div>
+
+                            <form id="expenseForm" class="styled-form">
+                                <input type="hidden" id="editExpenseIndex" value="-1" />
+                                <div class="form-row-2">
+                                    <div class="form-field">
+                                        <label for="amount">Amount (₹) <span class="req">*</span></label>
+                                        <div class="input-with-prefix">
+                                            <span class="prefix">₹</span>
+                                            <input type="number" id="amount" name="amount" min="1" step="0.01" placeholder="e.g. 150" required />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="category">Category <span class="req">*</span></label>
+                                        <select id="category" name="category" required>
+                                            <option value="Food">Food</option>
+                                            <option value="Transport">Transport</option>
+                                            <option value="Study">Study</option>
+                                            <option value="Entertainment">Entertainment</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row-2">
+                                    <div class="form-field">
+                                        <label for="date">Expense Date <span class="req">*</span></label>
+                                        <input type="date" id="date" name="date" required />
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="description">Description / Merchant</label>
+                                        <input type="text" id="description" name="description" placeholder="e.g. College Canteen Lunch, Metro recharge" />
+                                    </div>
+                                </div>
+
+                                <div class="form-actions-row">
+                                    <button type="submit" class="btn-primary" id="expenseSubmitBtn">
+                                        <i class="fas fa-plus"></i>
+                                        <span id="expenseSubmitBtnText">Add Expense</span>
+                                    </button>
+                                    <button type="button" class="btn-secondary hidden" id="cancelEditBtn">
+                                        <i class="fas fa-times"></i> Cancel Edit
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Spending By Category Chart Card -->
+                        <div class="card-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-chart-pie panel-icon"></i>
+                                    <div>
+                                        <h2 id="categoryChartHeading">Spending by Category</h2>
+                                        <span class="chart-month-subtitle" id="chartMonthSubtitle">Month: Calculating...</span>
+                                    </div>
+                                </div>
+                                <div class="chart-header-right">
+                                    <span class="chart-spend-pill" id="chartMonthlySpendBadge">₹0.00 Spent</span>
+                                </div>
+                            </div>
+
+                            <div class="chart-container-box">
+                                <div class="chart-canvas-wrapper">
+                                    <canvas id="categoryChart"></canvas>
+                                </div>
+                                <div class="category-breakdown-legend" id="categoryBreakdownLegend">
+                                    <!-- Populated dynamically via JS with all categories -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense History Table Card -->
+                    <div class="card-panel table-panel">
+                        <div class="panel-header">
+                            <div class="panel-header-title">
+                                <i class="fas fa-receipt panel-icon"></i>
+                                <h2>Recent Expense History</h2>
+                            </div>
+                            <div class="table-actions-right">
+                                <button type="button" class="btn-sm-action" id="exportDataBtn">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button type="button" class="btn-sm-action danger-light" id="clearAllExpensesBtn">
+                                    <i class="fas fa-trash-alt"></i> Clear Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive-container">
+                            <table class="saas-table" id="expenseTable">
+                                <thead>
+                                    <tr>
+                                        <th>DATE</th>
+                                        <th>CATEGORY</th>
+                                        <th>DESCRIPTION</th>
+                                        <th>AMOUNT</th>
+                                        <th style="text-align: right;">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="empty-state-notice hidden" id="emptyExpenseNotice">
+                            <div class="empty-icon"><i class="fas fa-receipt"></i></div>
+                            <h3>No Expenses Found</h3>
+                            <p>No matching expenses logged yet. Add your first expense above to start tracking!</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==============================================
+                     SECTION 2: SMALL SAVINGS, BIG FUTURE
+                     ============================================== -->
+                <section class="content-section hidden" id="savings-section">
+                    <!-- Top Sub-Section Banner Card -->
+                    <div class="banner-card">
+                        <div class="banner-info">
+                            <div class="banner-eyebrow">
+                                <i class="fas fa-seedling"></i>
+                                <span>SUB-SECTION 2 • SMALL SAVINGS, BIG FUTURE</span>
+                            </div>
+                            <h1 class="banner-title">Small Savings, Big Future</h1>
+                            <p class="banner-description">
+                                Discover how small everyday savings of ₹10, ₹20, or ₹30 add up over academic semesters into transformative financial freedom.
+                            </p>
+                        </div>
+                        <div class="banner-action-box">
+                            <span class="banner-action-label">Active Savings Track:</span>
+                            <div class="banner-dropdown-pill">
+                                <span>Student Micro-Compounding (98%)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculator & Milestone Projection -->
+                    <div class="content-dual-grid">
+                        <div class="card-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-calculator panel-icon"></i>
+                                    <h2>Daily Savings Calculator</h2>
+                                </div>
+                                <span class="panel-tag">Interactive</span>
+                            </div>
+
+                            <div class="savings-calc-body">
+                                <label class="field-label-bold">Select Daily Savings Amount:</label>
+                                <div class="savings-amount-selector" id="dailyAmountSelector">
+                                    <label class="radio-pill active">
+                                        <input type="radio" name="dailyAmount" value="10" checked />
+                                        <span class="pill-title">₹10</span>
+                                        <span class="pill-desc">Pocket Change</span>
+                                    </label>
+                                    <label class="radio-pill">
+                                        <input type="radio" name="dailyAmount" value="20" />
+                                        <span class="pill-title">₹20</span>
+                                        <span class="pill-desc">1 Snack Swap</span>
+                                    </label>
+                                    <label class="radio-pill">
+                                        <input type="radio" name="dailyAmount" value="30" />
+                                        <span class="pill-title">₹30</span>
+                                        <span class="pill-desc">Chai & Biscuit</span>
+                                    </label>
+                                    <label class="radio-pill">
+                                        <input type="radio" name="dailyAmount" value="50" />
+                                        <span class="pill-title">₹50</span>
+                                        <span class="pill-desc">Pro Saver</span>
+                                    </label>
+                                </div>
+
+                                <div class="form-field" style="margin-top: 18px;">
+                                    <label for="savingDays">Time Duration (Days):</label>
+                                    <div class="input-with-button">
+                                        <input type="number" id="savingDays" min="1" max="1825" value="90" />
+                                        <div class="preset-duration-chips">
+                                            <button type="button" class="preset-btn" data-days="30">30d (1 mo)</button>
+                                            <button type="button" class="preset-btn active" data-days="90">90d (1 term)</button>
+                                            <button type="button" class="preset-btn" data-days="180">180d (Sem)</button>
+                                            <button type="button" class="preset-btn" data-days="365">365d (1 yr)</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn-primary full-width" id="calcSavingsBtn" style="margin-top: 16px;">
+                                    <i class="fas fa-calculator"></i> Calculate Compounded Savings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Projection Display Card -->
+                        <div class="card-panel highlight-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-coins panel-icon"></i>
+                                    <h2>Future Value & Milestone</h2>
+                                </div>
+                                <span class="panel-tag green">Projected</span>
+                            </div>
+
+                            <div class="savings-result-box">
+                                <div class="result-number-wrap">
+                                    <span class="result-label">Total Principal Saved</span>
+                                    <div class="result-big-amount" id="savingsResult">₹1,800.00</div>
+                                </div>
+
+                                <div class="compounding-stat-row">
+                                    <div class="comp-item">
+                                        <span class="comp-title">At 7% Annual FD/Index:</span>
+                                        <span class="comp-val" id="savingsWithInterest">₹1,831.50</span>
+                                    </div>
+                                    <div class="comp-item">
+                                        <span class="comp-title">Annual Rate Equivalent:</span>
+                                        <span class="comp-val" id="savingsAnnualRate">₹7,300 / yr</span>
+                                    </div>
+                                </div>
+
+                                <div class="milestone-badge-box">
+                                    <div class="milestone-icon"><i class="fas fa-award"></i></div>
+                                    <div class="milestone-content">
+                                        <h4 id="milestoneTitle">Semester Textbook Fund</h4>
+                                        <p id="milestoneDesc">This covers your semester textbooks, lab notebooks, or two certified technical exam fees!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Savings Goals Section -->
+                    <div class="card-panel">
+                        <div class="panel-header">
+                            <div class="panel-header-title">
+                                <i class="fas fa-bullseye panel-icon"></i>
+                                <h2>Student Savings Goals</h2>
+                            </div>
+                            <span class="panel-tag">Target Tracker</span>
+                        </div>
+
+                        <!-- Create New Goal Form -->
+                        <form id="goalForm" class="styled-form goal-create-form">
+                            <div class="form-row-3">
+                                <div class="form-field">
+                                    <label for="goalTitle">Goal Name <span class="req">*</span></label>
+                                    <input type="text" id="goalTitle" placeholder="e.g. New Coding Laptop, Coursera Cert, Hostel Security" required />
+                                </div>
+                                <div class="form-field">
+                                    <label for="goalAmount">Target Amount (₹) <span class="req">*</span></label>
+                                    <div class="input-with-prefix">
+                                        <span class="prefix">₹</span>
+                                        <input type="number" id="goalAmount" min="100" step="50" placeholder="e.g. 5000" required />
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label for="goalDate">Target Deadline <span class="req">*</span></label>
+                                    <input type="date" id="goalDate" required />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Set Savings Goal
+                            </button>
+                        </form>
+
+                        <!-- Goals Container -->
+                        <div class="goals-grid" id="goalsContainer" style="margin-top: 24px;">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==============================================
+                     SECTION 3: INVESTMENT & VIRTUAL TRADING
+                     ============================================== -->
+                <section class="content-section hidden" id="invest-section">
+                    <!-- Top Sub-Section Banner Card -->
+                    <div class="banner-card">
+                        <div class="banner-info">
+                            <div class="banner-eyebrow">
+                                <i class="fas fa-chart-line"></i>
+                                <span>SUB-SECTION 3 • INVESTMENT & VIRTUAL TRADING</span>
+                            </div>
+                            <h1 class="banner-title">Investment & Virtual Trading</h1>
+                            <p class="banner-description">
+                                Learn the stock market risk-free with ₹10,000 in virtual student funds. Test investment strategies in a live simulated environment.
+                            </p>
+                        </div>
+                        <div class="banner-action-box">
+                            <span class="banner-action-label">Market Mode:</span>
+                            <div class="banner-dropdown-pill">
+                                <span>Live Simulated NIFTY & TECH (Sim)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Top Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Available Virtual Cash</span>
+                                <span class="metric-badge green">Liquidity</span>
+                            </div>
+                            <div class="metric-value" id="investCashAvailable">₹10,000.00</div>
+                            <div class="metric-foot">Uninvested student balance</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Invested Stock Value</span>
+                                <span class="metric-badge blue">Holdings</span>
+                            </div>
+                            <div class="metric-value" id="portfolioTotal">₹0.00</div>
+                            <div class="metric-foot">Current valuation of shares held</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Total Net Worth</span>
+                                <span class="metric-badge purple">Capital</span>
+                            </div>
+                            <div class="metric-value" id="portfolioNetWorth">₹10,000.00</div>
+                            <div class="metric-foot">Cash + Stock Portfolio</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Simulated P&L</span>
+                                <span class="metric-badge" id="investProfitBadge">0.00%</span>
+                            </div>
+                            <div class="metric-value" id="investProfitValue">₹0.00</div>
+                            <div class="metric-foot">Profit/Loss vs initial capital</div>
+                        </div>
+                    </div>
+
+                    <!-- Market Stocks & Portfolio Section -->
+                    <div class="content-dual-grid">
+                        <!-- Live Market Watchlist -->
+                        <div class="card-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-store panel-icon"></i>
+                                    <div>
+                                        <h2>Simulated Stock Market</h2>
+                                        <span class="chart-month-subtitle">Live algorithmic ticks every 5s</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-sm-action" id="resetInvestBalanceBtn">
+                                    <i class="fas fa-redo"></i> Reset Capital
+                                </button>
+                            </div>
+
+                            <div class="table-responsive-container">
+                                <table class="saas-table" id="stockTable">
+                                    <thead>
+                                        <tr>
+                                            <th>STOCK / COMPANY</th>
+                                            <th>PRICE</th>
+                                            <th>24H CHG</th>
+                                            <th>QUANTITY</th>
+                                            <th style="text-align: right;">ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Portfolio Valuation Trend Chart -->
+                        <div class="card-panel">
+                            <div class="panel-header">
+                                <div class="panel-header-title">
+                                    <i class="fas fa-chart-area panel-icon"></i>
+                                    <div>
+                                        <h2>Net Worth History</h2>
+                                        <span class="chart-month-subtitle">Real-time valuation tracker</span>
+                                    </div>
+                                </div>
+                                <span class="panel-tag blue">Realtime</span>
+                            </div>
+
+                            <div class="chart-canvas-wrapper" style="height: 280px;">
+                                <canvas id="portfolioChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Stock Holdings Table -->
+                    <div class="card-panel table-panel">
+                        <div class="panel-header">
+                            <div class="panel-header-title">
+                                <i class="fas fa-briefcase panel-icon"></i>
+                                <h2>Your Stock Portfolio Holdings</h2>
+                            </div>
+                            <span class="panel-tag green" id="holdingsCountBadge">0 Companies Held</span>
+                        </div>
+
+                        <div class="table-responsive-container">
+                            <table class="saas-table" id="portfolioTable">
+                                <thead>
+                                    <tr>
+                                        <th>SYMBOL</th>
+                                        <th>SHARES OWNED</th>
+                                        <th>AVG BUY PRICE</th>
+                                        <th>CURRENT PRICE</th>
+                                        <th>TOTAL VALUE</th>
+                                        <th style="text-align: right;">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="empty-state-notice hidden" id="emptyPortfolioNotice">
+                            <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
+                            <h3>No Active Investments Yet</h3>
+                            <p>Buy your first virtual share above to start building your simulated portfolio!</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==============================================
+                     SECTION 4: SAVINGS CHALLENGES
+                     ============================================== -->
+                <section class="content-section hidden" id="challenges-section">
+                    <!-- Top Sub-Section Banner Card -->
+                    <div class="banner-card">
+                        <div class="banner-info">
+                            <div class="banner-eyebrow">
+                                <i class="fas fa-trophy"></i>
+                                <span>SUB-SECTION 4 • GAMIFIED SAVINGS CHALLENGES</span>
+                            </div>
+                            <h1 class="banner-title">Savings Challenges & Streaks</h1>
+                            <p class="banner-description">
+                                Build real financial discipline with daily student challenges. Complete micro-goals to build streaks and unlock badges.
+                            </p>
+                        </div>
+                        <div class="banner-action-box">
+                            <span class="banner-action-label">Streak Status:</span>
+                            <div class="banner-dropdown-pill">
+                                <span>Active Saver Discipline (Tier 1)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gamification Bar -->
+                    <div class="metrics-grid">
+                        <div class="metric-card streak-highlight-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Savings Streak</span>
+                                <span class="metric-badge orange">Active</span>
+                            </div>
+                            <div class="metric-value streak-val">
+                                <span id="streakCount">0</span> Days
+                            </div>
+                            <div class="metric-foot">Check-in daily to keep streak alive!</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Completed Challenges</span>
+                                <span class="metric-badge green">Verified</span>
+                            </div>
+                            <div class="metric-value" id="completedChallengesCount">0</div>
+                            <div class="metric-foot">Total student challenges beaten</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Discipline Badges</span>
+                                <span class="metric-badge purple">Unlocked</span>
+                            </div>
+                            <div class="metric-value" id="badgeContainer" style="font-size: 1.3rem; padding-top: 6px;">
+                                <span class="badge-tag">No Badges Yet</span>
+                            </div>
+                            <div class="metric-foot">Unlocks at 5, 15, and 30 day streaks</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-top">
+                                <span class="metric-title">Estimated Challenge Savings</span>
+                                <span class="metric-badge blue">Saved</span>
+                            </div>
+                            <div class="metric-value" id="challengeSavingsTotal">₹0.00</div>
+                            <div class="metric-foot">Money saved by completing challenges</div>
+                        </div>
+                    </div>
+
+                    <!-- Challenges Grid -->
+                    <div class="card-panel">
+                        <div class="panel-header">
+                            <div class="panel-header-title">
+                                <i class="fas fa-tasks panel-icon"></i>
+                                <h2>Available Student Challenges</h2>
+                            </div>
+                            <div class="table-actions-right">
+                                <button type="submit" form="newChallengeForm" class="btn-sm-action primary-action" id="addChallengeBtn">
+                                    <i class="fas fa-plus"></i> Add Challenge
+                                </button>
+                                <button type="button" class="btn-sm-action danger-light" id="resetChallengesBtn">
+                                    <i class="fas fa-redo"></i> Reset Challenges
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add New Challenge Option Box (Below Reset Challenges) -->
+                        <div class="add-challenge-card" id="addChallengeCard">
+                            <div class="add-challenge-header">
+                                <div class="add-ch-title">
+                                    <i class="fas fa-plus-circle" style="color: var(--color-primary);"></i>
+                                    <span>Create New Savings Challenge</span>
+                                </div>
+                                <span class="panel-tag blue">Custom Challenge</span>
+                            </div>
+
+                            <form id="newChallengeForm" class="styled-form" style="margin-top: 14px;">
+                                <div class="form-row-3">
+                                    <div class="form-field">
+                                        <label for="newChallengeTitle">Challenge Name <span class="req">*</span></label>
+                                        <input type="text" id="newChallengeTitle" placeholder="e.g. 5-Day No Delivery Challenge" required />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="newChallengeSavings">Estimated Savings (₹) <span class="req">*</span></label>
+                                        <div class="input-with-prefix">
+                                            <span class="prefix">₹</span>
+                                            <input type="number" id="newChallengeSavings" min="10" step="10" placeholder="e.g. 250" required />
+                                        </div>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="newChallengeIcon">Category Icon</label>
+                                        <select id="newChallengeIcon">
+                                            <option value="fas fa-trophy">Trophy / Milestone</option>
+                                            <option value="fas fa-utensils">Home Meal / Canteen</option>
+                                            <option value="fas fa-walking">Walking / Commute</option>
+                                            <option value="fas fa-coffee">DIY Coffee / Tea</option>
+                                            <option value="fas fa-shopping-bag">Shopping Diet</option>
+                                            <option value="fas fa-bolt">Micro Saver</option>
+                                            <option value="fas fa-book">Library / Study First</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label for="newChallengeDesc">Description / Student Rules <span class="req">*</span></label>
+                                    <input type="text" id="newChallengeDesc" placeholder="e.g. Walk to morning lectures instead of taking an auto and save ₹50 every single day." required />
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="challenges-grid" id="challengeList" style="margin-top: 20px;">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>
