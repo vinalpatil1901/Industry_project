@@ -2,11 +2,16 @@
   "name": "industry-project",
   "version": "1.0.0",
   "private": true,
-  "description": "Student Money Management Platform",
+  "description": "Campus360 student applications",
   "scripts": {
-    "dev": "vite \"Money Management\"",
-    "build": "vite build \"Money Management\"",
-    "preview": "vite preview \"Money Management\""
+    "dev": "npm run dev:money",
+    "dev:money": "vite \"Money Management\"",
+    "dev:career": "npm run dev --prefix \"Career&college\"",
+    "build": "npm run build:money && npm run build:career",
+    "build:money": "vite build \"Money Management\"",
+    "build:career": "npm run build --prefix \"Career&college\"",
+    "preview:money": "vite preview \"Money Management\"",
+    "preview:career": "npm run preview --prefix \"Career&college\""
   },
   "devDependencies": {
     "vite": "^8.3.5"
