@@ -534,7 +534,7 @@ export default function CareerResultDashboard({
                 Required Second-Hand Textbooks & Lab Kits
               </h2>
               <p className="text-slate-600 text-xs mt-0.5 max-w-2xl">
-                Save up to 75% on semester reading materials. Pre-annotated books and hardware kits listed directly by senior students graduating from this career path.
+                Save up to 75% on study materials. Pre-annotated books and hardware kits listed directly by senior students graduating from this career path.
               </p>
             </div>
           </div>
@@ -633,7 +633,7 @@ export default function CareerResultDashboard({
         <div className="bg-white rounded-xl p-4 border border-amber-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-slate-700">
             <span className="font-bold text-slate-900">Looking for more second-hand materials?</span>
-            <span className="hidden sm:inline text-slate-500">Access student notes, semester test papers, and graphing calculators.</span>
+            <span className="hidden sm:inline text-slate-500">Access student notes, test papers, and graphing calculators.</span>
           </div>
 
           <button

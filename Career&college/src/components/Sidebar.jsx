@@ -33,8 +33,8 @@ const moneyLinks = [
 
 const marketplaceLinks = [
   { id: 'dashboard', label: 'Learn & Earn', icon: Store },
-  { id: 'purchases', label: 'My Purchases', icon: LibraryBig },
   { id: 'listings', label: 'My Listings', icon: ListChecks },
+  { id: 'purchases', label: 'My Purchases', icon: LibraryBig },
 ];
 
 const communityLinks = [

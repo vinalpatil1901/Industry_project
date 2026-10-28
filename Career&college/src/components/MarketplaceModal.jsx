@@ -79,9 +79,6 @@ export default function MarketplaceModal({ item, onClose, onAddToCart }) {
               <span className="text-[11px] font-semibold text-blue-800 line-clamp-2">
                 {item.category}
               </span>
-              <span className="mt-2 text-[10px] bg-white/80 font-bold px-2 py-0.5 rounded-full text-blue-900 border border-blue-200">
-                {item.semester}
-              </span>
             </div>
 
             <div className="flex-1 space-y-2.5">

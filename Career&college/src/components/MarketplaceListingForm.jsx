@@ -22,7 +22,7 @@ function Field({ label, error, wide = false, children }) {
 
 export default function MarketplaceListingForm({ initial, onClose, onSave, workspaceOffset = 0 }) {
   const [form, setForm] = useState(() => initial || {
-    title: '', category: 'Notes', subject: '', course: '', semester: '', college: '',
+    title: '', category: 'Notes', subject: '', course: '', college: '',
     description: '', type: 'PDF', price: '', condition: 'Good', contact: '', fileName: '', imageName: '',
   });
   const [errors, setErrors] = useState({});
@@ -46,7 +46,7 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
   const submit = (event) => {
     event.preventDefault();
     const nextErrors = {};
-    ['title', 'subject', 'course', 'semester', 'description'].forEach((key) => {
+    ['title', 'subject', 'course', 'description'].forEach((key) => {
       if (!String(form[key]).trim()) nextErrors[key] = 'Required';
     });
     if (form.price === '' || Number(form.price) < 0) nextErrors.price = 'Enter a valid price.';
@@ -97,9 +97,6 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
             </Field>
             <Field label="Course" error={errors.course}>
               <input value={form.course} onChange={(event) => setField('course', event.target.value)} className={fieldClass} placeholder="e.g. B.Tech CSE" />
-            </Field>
-            <Field label="Semester" error={errors.semester}>
-              <input value={form.semester} onChange={(event) => setField('semester', event.target.value)} className={fieldClass} inputMode="numeric" placeholder="e.g. 4" />
             </Field>
             <Field label="College name (optional)">
               <input value={form.college} onChange={(event) => setField('college', event.target.value)} className={fieldClass} placeholder="e.g. Campus360 College" />
