@@ -1,29 +1,29 @@
-# Campus360 Industry Project
+# Campus360
 
-This repository contains two independent Campus360 applications.
+Campus360 is a single-page Vite website. It has one shared Campus360 sidebar with two connected areas:
 
-| Application | Development URL | Command |
-| --- | --- | --- |
-| Money Management | http://localhost:5173 | `npm run dev:money` |
-| Career & College | http://localhost:5174 | `npm run dev:career` |
+| Area | URL |
+| --- | --- |
+| Career | `http://localhost:5173/#career-survey` |
+| Money Management | `http://localhost:5173/#money-expense` |
 
-## First-time setup
-
-Install the dependencies for both applications:
+## Setup
 
 ```bash
 npm install
-npm install --prefix "Career&college"
 ```
 
-## Run an application
+## Run the complete website
 
 ```bash
-# Money Management
-npm run dev:money
-
-# Career & College
-npm run dev:career
+npm run dev
 ```
 
-Run `npm run build` to build both applications. The production outputs are created in `Money Management/dist` and `Career&college/dist`.
+Open `http://localhost:5173/`. Use the single sidebar to move between Career Survey, College Recommendation, and every Money Management subsection. The URL updates with a hash, but the app remains on the same page and server.
+
+## Production check
+
+```bash
+npm run build
+npm run preview
+```

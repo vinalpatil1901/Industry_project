@@ -3,6 +3,8 @@
 // Complete Controller Script for All 4 Dashboard Sections
 // ==========================================================================
 
+import Chart from 'chart.js/auto';
+
 // ---------- 1. Utilities & Formatting ----------
 function formatINR(val) {
   const num = Number(val) || 0;
@@ -1503,6 +1505,9 @@ function escapeHtml(str) {
 // 7. Master Initialization
 // ==========================================================================
 function initApp() {
+  if (window.parent !== window) {
+    document.body.classList.add('embedded-money');
+  }
   initNavigation();
   loadExpenses();
   initExpenseForm();
@@ -1511,5 +1516,12 @@ function initApp() {
   initInvestSection();
   initChallengesSection();
 }
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== window.location.origin || event.data?.type !== 'campus360:money-section') return;
+
+  const section = event.data.section;
+  document.querySelector(`.nav-item[data-section="${section}"]`)?.click();
+});
 
 window.addEventListener('DOMContentLoaded', initApp);

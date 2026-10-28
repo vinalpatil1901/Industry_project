@@ -1,34 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ChevronRight, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import CareerSurvey from './components/CareerSurvey';
 import CollegeRecommendation from './components/CollegeRecommendation';
+import MoneyManagement from './components/MoneyManagement';
 import { evaluateCareers } from './utils/careerEvaluation';
-import { Menu, ChevronRight } from 'lucide-react';
+
+const MONEY_SECTIONS = {
+  expense: 'Daily Expense Tracker',
+  savings: 'Small Savings, Big Future',
+  invest: 'Investment & Virtual Trading',
+  challenges: 'Savings Challenges',
+};
+
+function readNavigation() {
+  const hash = window.location.hash.replace('#', '');
+
+  if (hash.startsWith('money-')) {
+    const section = hash.replace('money-', '');
+    return { area: 'money', section: MONEY_SECTIONS[section] ? section : 'expense' };
+  }
+
+  return {
+    area: 'career',
+    section: hash === 'career-colleges' ? 'colleges' : 'survey',
+  };
+}
 
 export default function App() {
-  // Navigation strictly between the two sub-sections: 'survey' and 'colleges'
-  const [activeSection, setActiveSection] = useState('survey');
+  const [navigation, setNavigation] = useState(readNavigation);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  // Adjustable sidebar state
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  );
-
-  useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Shared state: survey inputs and evaluated career options
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const [surveyData, setSurveyData] = useState(null);
   const [careerResults, setCareerResults] = useState(null);
   const [selectedCareer, setSelectedCareer] = useState(null);
 
-  // Handle survey submission
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    const handleLocationChange = () => setNavigation(readNavigation());
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
+
+  const navigate = (area, section) => {
+    const hash = area === 'money' ? `money-${section}` : `career-${section}`;
+    window.history.pushState(null, '', `#${hash}`);
+    setNavigation({ area, section });
+    setIsMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSaveSurvey = (formData) => {
     setSurveyData(formData);
     const evaluated = evaluateCareers(formData);
@@ -36,13 +66,19 @@ export default function App() {
     setSelectedCareer(evaluated[0]);
   };
 
+  const isMoneyArea = navigation.area === 'money';
+  const breadcrumbSection = isMoneyArea
+    ? MONEY_SECTIONS[navigation.section]
+    : navigation.section === 'survey'
+      ? 'Career Survey'
+      : 'College Recommendation';
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex font-sans selection:bg-blue-600 selection:text-white">
-      
-      {/* 1. Main Sidebar with section 'Career' -> 'Career Survey' & 'College Recommendation' */}
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
       <Sidebar
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
+        activeArea={navigation.area}
+        activeSection={navigation.section}
+        onNavigate={navigate}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
         sidebarWidth={sidebarWidth}
@@ -51,66 +87,53 @@ export default function App() {
         setIsCollapsed={setIsCollapsed}
       />
 
-      {/* 2. Main Content Area - dynamically respects adjustable sidebar */}
-      <div 
-        className="flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-150 ease-out"
+      <div
+        className="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-150 ease-out"
         style={{ marginLeft: isDesktop ? (isCollapsed ? '68px' : `${sidebarWidth}px`) : 0 }}
       >
-        
-        {/* Clean Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setIsMobileOpen(true)}
-              className="md:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200"
-              aria-label="Open Navigation Menu"
+              className="rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+              aria-label="Open navigation menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="h-5 w-5" />
             </button>
 
-            {/* Breadcrumb indicator */}
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="font-bold text-slate-800">Campus360</span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-600">Career</span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-blue-600 font-bold">
-                {activeSection === 'survey' ? 'Career Survey' : 'College Recommendation'}
-              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : 'Career'}</span>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+              <span className="font-bold text-blue-600">{breadcrumbSection}</span>
             </div>
           </div>
         </header>
 
-        {/* Sub-section views based on sidebar navigation */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {activeSection === 'survey' ? (
+        <main className={isMoneyArea ? 'flex-1 overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
+          {isMoneyArea ? (
+            <MoneyManagement activeSection={navigation.section} />
+          ) : navigation.section === 'survey' ? (
             <CareerSurvey
               surveyData={surveyData}
               careerResults={careerResults}
               selectedCareer={selectedCareer}
               onSaveSurvey={handleSaveSurvey}
               onSelectCareer={setSelectedCareer}
-              onGoToColleges={() => {
-                setActiveSection('colleges');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onGoToColleges={() => navigate('career', 'colleges')}
             />
           ) : (
             <CollegeRecommendation
               selectedCareer={selectedCareer}
               careerResults={careerResults}
               onSelectCareer={setSelectedCareer}
-              onGoToSurvey={() => {
-                setActiveSection('survey');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onGoToSurvey={() => navigate('career', 'survey')}
             />
           )}
         </main>
-
       </div>
-
     </div>
   );
 }

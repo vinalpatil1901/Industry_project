@@ -1,41 +1,71 @@
-import React, { useState } from 'react';
-import { 
-  Compass, 
-  ClipboardCheck, 
-  GraduationCap, 
-  X,
+import { useState } from 'react';
+import {
   ChevronDown,
   ChevronUp,
+  ClipboardCheck,
+  Compass,
+  GraduationCap,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  PiggyBank,
+  Trophy,
+  TrendingUp,
+  WalletCards,
+  X,
 } from 'lucide-react';
 
-export default function Sidebar({ 
-  activeSection, 
-  setActiveSection, 
-  isMobileOpen, 
+const careerLinks = [
+  { id: 'survey', label: 'Career Survey', icon: ClipboardCheck },
+  { id: 'colleges', label: 'College Recommendation', icon: GraduationCap },
+];
+
+const moneyLinks = [
+  { id: 'expense', label: 'Daily Expense Tracker', icon: WalletCards },
+  { id: 'savings', label: 'Small Savings, Big Future', icon: PiggyBank },
+  { id: 'invest', label: 'Investment & Virtual Trading', icon: TrendingUp },
+  { id: 'challenges', label: 'Savings Challenges', icon: Trophy },
+];
+
+function SectionHeader({ title, expanded, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full items-center justify-between rounded px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-white"
+      aria-expanded={expanded}
+    >
+      <span>{title}</span>
+      <span className="rounded p-0.5 text-slate-400 group-hover:text-white">
+        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </span>
+    </button>
+  );
+}
+
+export default function Sidebar({
+  activeArea,
+  activeSection,
+  onNavigate,
+  isMobileOpen,
   setIsMobileOpen,
   sidebarWidth = 256,
   setSidebarWidth,
   isCollapsed = false,
-  setIsCollapsed
+  setIsCollapsed,
 }) {
-  // State for minimizing/expanding the Career section (defaults to expanded)
   const [isCareerExpanded, setIsCareerExpanded] = useState(true);
+  const [isMoneyExpanded, setIsMoneyExpanded] = useState(true);
 
-  // Resize drag handler
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
+  const navigate = (area, section) => onNavigate(area, section);
+
+  const handleMouseDown = (event) => {
+    event.preventDefault();
+    const startX = event.clientX;
     const startWidth = sidebarWidth;
 
     const handleMouseMove = (moveEvent) => {
-      const newWidth = Math.min(360, Math.max(200, startWidth + (moveEvent.clientX - startX)));
-      if (setSidebarWidth) {
-        setSidebarWidth(newWidth);
-      }
+      setSidebarWidth?.(Math.min(360, Math.max(200, startWidth + (moveEvent.clientX - startX))));
     };
-
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -45,229 +75,107 @@ export default function Sidebar({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const iconButton = (area, item) => {
+    const Icon = item.icon;
+    const isActive = activeArea === area && activeSection === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => navigate(area, item.id)}
+        title={item.label}
+        className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
+          isActive ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        }`}
+      >
+        <Icon className="h-5 w-5" />
+      </button>
+    );
+  };
+
+  const textButton = (area, item) => {
+    const Icon = item.icon;
+    const isActive = activeArea === area && activeSection === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => navigate(area, item.id)}
+        className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition-colors ${
+          isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+        }`}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
+  };
+
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isMobileOpen && (
-        <div 
-          onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden"
-        />
-      )}
+      {isMobileOpen && <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden" />}
 
-      {/* Main Sidebar */}
       <aside
         style={{ width: isCollapsed ? '68px' : `${sidebarWidth}px` }}
-        className={`fixed top-0 bottom-0 left-0 z-50 bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-800 transition-all duration-150 ease-out md:translate-x-0 ${
+        className={`fixed bottom-0 left-0 top-0 z-50 flex flex-col justify-between border-r border-slate-800 bg-slate-900 text-slate-300 transition-all duration-150 ease-out md:translate-x-0 ${
           isMobileOpen ? 'translate-x-0 !w-64' : '-translate-x-full md:shadow-none'
         }`}
       >
         <div>
-          {/* HEADER: Matches Image 1 precisely when collapsed */}
           {isCollapsed ? (
-            <div className="py-3 px-2 flex flex-col items-center gap-2 border-b border-slate-800">
-              {/* Compass Brand Icon */}
-              <button
-                type="button"
-                onClick={() => setIsCollapsed(false)}
-                title="Campus360 - Click to expand"
-                className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-500 transition-colors shrink-0"
-              >
-                <Compass className="w-5 h-5" />
+            <div className="flex flex-col items-center gap-2 border-b border-slate-800 px-2 py-3">
+              <button type="button" onClick={() => setIsCollapsed(false)} title="Expand sidebar" className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md transition-colors hover:bg-blue-500">
+                <Compass className="h-5 w-5" />
               </button>
-
-              {/* Expand Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setIsCollapsed(false)}
-                title="Expand Sidebar"
-                className="w-9 h-9 rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-colors shrink-0"
-              >
-                <PanelLeftOpen className="w-4 h-4" />
+              <button type="button" onClick={() => setIsCollapsed(false)} title="Expand sidebar" className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/40 text-slate-300 transition-colors hover:bg-slate-800">
+                <PanelLeftOpen className="h-4 w-4" />
               </button>
             </div>
           ) : (
-            <div className="h-16 px-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shrink-0">
-                  <Compass className="w-5 h-5" />
-                </div>
+            <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
+              <div className="flex min-w-0 items-center gap-2.5 overflow-hidden">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm"><Compass className="h-5 w-5" /></div>
                 <div className="truncate">
-                  <span className="text-base font-bold text-white tracking-tight">
-                    Campus<span className="text-blue-400 font-extrabold">360</span>
-                  </span>
-                  <span className="block text-[10px] text-slate-400 font-medium truncate">
-                    Academic Platform
-                  </span>
+                  <span className="text-base font-bold tracking-tight text-white">Campus<span className="font-extrabold text-blue-400">360</span></span>
+                  <span className="block truncate text-[10px] font-medium text-slate-400">Academic Platform</span>
                 </div>
               </div>
-
-              {/* Controls: Collapse Sidebar Toggle (Desktop) & Close (Mobile) */}
               <div className="flex items-center gap-1">
-                {setIsCollapsed && (
-                  <button
-                    type="button"
-                    onClick={() => setIsCollapsed(true)}
-                    title="Minimize sidebar width"
-                    className="hidden md:flex p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
-                  >
-                    <PanelLeftClose className="w-4 h-4" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setIsMobileOpen(false)}
-                  className="md:hidden text-slate-400 hover:text-white p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <button type="button" onClick={() => setIsCollapsed(true)} title="Minimize sidebar" className="hidden rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:flex"><PanelLeftClose className="h-4 w-4" /></button>
+                <button type="button" onClick={() => setIsMobileOpen(false)} aria-label="Close navigation menu" className="rounded p-1 text-slate-400 hover:text-white md:hidden"><X className="h-5 w-5" /></button>
               </div>
             </div>
           )}
 
-          {/* MENU SECTIONS */}
           {isCollapsed ? (
-            /* COLLAPSED ICON STACK (Matching Image 1) */
-            <div className="py-3 px-2 flex flex-col items-center gap-3">
-              
-              {/* Career minimize toggle */}
-              <button
-                type="button"
-                onClick={() => setIsCareerExpanded(!isCareerExpanded)}
-                title={isCareerExpanded ? "Minimize Career Section" : "Expand Career Section"}
-                className="w-7 h-7 rounded text-slate-400 hover:text-white hover:bg-slate-800/80 flex items-center justify-center transition-colors"
-              >
-                {isCareerExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
+            <div className="flex flex-col items-center gap-2 px-2 py-3">
+              <button type="button" onClick={() => setIsCareerExpanded(!isCareerExpanded)} title="Toggle Career section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
+                {isCareerExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
-
-              {/* Sub-sections Icons */}
-              {isCareerExpanded && (
-                <div className="flex flex-col items-center gap-2.5">
-                  {/* Sub-section a) Career Survey */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection('survey');
-                      setIsMobileOpen(false);
-                    }}
-                    title="Career Survey"
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                      activeSection === 'survey'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <ClipboardCheck className="w-5 h-5" />
-                  </button>
-
-                  {/* Sub-section b) College Recommendation */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection('colleges');
-                      setIsMobileOpen(false);
-                    }}
-                    title="College Recommendation"
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                      activeSection === 'colleges'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <GraduationCap className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+              {isCareerExpanded && careerLinks.map((item) => iconButton('career', item))}
+              <div className="my-1 h-px w-8 bg-slate-800" />
+              <button type="button" onClick={() => setIsMoneyExpanded(!isMoneyExpanded)} title="Toggle Money Management section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
+                {isMoneyExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {isMoneyExpanded && moneyLinks.map((item) => iconButton('money', item))}
             </div>
           ) : (
-            /* EXPANDED FULL-WIDTH MENU */
-            <div className="p-3 space-y-4">
-              
-              {/* Section: "Career" with Minimize '^' Toggle Button */}
+            <nav className="space-y-4 p-3" aria-label="Campus360 sections">
               <div className="space-y-1">
-                
-                {/* Header with minimize '^' sign */}
-                <button
-                  type="button"
-                  onClick={() => setIsCareerExpanded(!isCareerExpanded)}
-                  title={isCareerExpanded ? "Minimize Career section" : "Expand Career section"}
-                  className="w-full px-2 py-1.5 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded hover:bg-slate-800/60 transition-colors cursor-pointer group"
-                >
-                  <span>Career</span>
-                  <span className="p-0.5 rounded text-slate-400 group-hover:text-white">
-                    {isCareerExpanded ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </span>
-                </button>
-
-                {/* Sub-sections (displayed only when NOT minimized) */}
-                {isCareerExpanded && (
-                  <div className="space-y-1 pt-0.5">
-                    {/* Sub-section a) "Career Survey" */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSection('survey');
-                        setIsMobileOpen(false);
-                      }}
-                      className={`w-full px-3 py-2.5 rounded-lg text-left text-xs font-semibold flex items-center justify-between transition-colors ${
-                        activeSection === 'survey'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <ClipboardCheck className="w-4 h-4 shrink-0" />
-                        <span className="truncate">Career Survey</span>
-                      </div>
-                    </button>
-
-                    {/* Sub-section b) "College Recommendation" */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSection('colleges');
-                        setIsMobileOpen(false);
-                      }}
-                      className={`w-full px-3 py-2.5 rounded-lg text-left text-xs font-semibold flex items-center justify-between transition-colors ${
-                        activeSection === 'colleges'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <GraduationCap className="w-4 h-4 shrink-0" />
-                        <span className="truncate">College Recommendation</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
-
+                <SectionHeader title="Career" expanded={isCareerExpanded} onClick={() => setIsCareerExpanded(!isCareerExpanded)} />
+                {isCareerExpanded && <div className="space-y-1 pt-0.5">{careerLinks.map((item) => textButton('career', item))}</div>}
               </div>
 
-            </div>
+              <div className="border-t border-slate-800 pt-3">
+                <SectionHeader title="Money Management" expanded={isMoneyExpanded} onClick={() => setIsMoneyExpanded(!isMoneyExpanded)} />
+                {isMoneyExpanded && <div className="space-y-1 pt-0.5">{moneyLinks.map((item) => textButton('money', item))}</div>}
+              </div>
+            </nav>
           )}
         </div>
 
-        {/* Clean bottom padding */}
         <div className="p-2" />
-
-        {/* Desktop Draggable Resize Handle */}
-        {!isCollapsed && (
-          <div
-            onMouseDown={handleMouseDown}
-            title="Drag to adjust sidebar width"
-            className="hidden md:block absolute top-0 bottom-0 right-0 w-1.5 cursor-col-resize hover:bg-blue-500/60 active:bg-blue-600 transition-colors"
-          />
-        )}
+        {!isCollapsed && <div onMouseDown={handleMouseDown} title="Drag to adjust sidebar width" className="absolute bottom-0 right-0 top-0 hidden w-1.5 cursor-col-resize transition-colors hover:bg-blue-500/60 active:bg-blue-600 md:block" />}
       </aside>
     </>
   );

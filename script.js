@@ -3,6 +3,8 @@
 // Complete Controller Script for All 4 Dashboard Sections
 // ==========================================================================
 
+import Chart from 'chart.js/auto';
+
 // ---------- 1. Utilities & Formatting ----------
 function formatINR(val) {
   const num = Number(val) || 0;

@@ -1891,6 +1891,19 @@ html, body {
   display: none !important;
 }
 
+/* The parent Campus360 application owns the only visible sidebar and header. */
+html.embedded-money .sidebar,
+html.embedded-money .top-nav-bar,
+body.embedded-money .sidebar,
+body.embedded-money .top-nav-bar {
+  display: none !important;
+}
+
+html.embedded-money .main-layout,
+body.embedded-money .main-layout {
+  width: 100%;
+}
+
 @media (max-width: 1024px) {
   .content-dual-grid {
     grid-template-columns: 1fr;
