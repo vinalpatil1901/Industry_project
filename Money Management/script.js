@@ -46,28 +46,30 @@ let activeCategoryFilter = 'All';
 let selectedMonthFilter = 'all';
 let categoryChartInstance = null;
 
-// Initial sample data to populate dashboard on first launch
-const INITIAL_SAMPLE_EXPENSES = [
-  { amount: 140, category: 'Food', date: getTodayStr(), description: 'Campus Canteen Lunch' },
-  { amount: 50, category: 'Transport', date: getTodayStr(), description: 'Metro Smart Card Ride' },
-  { amount: 450, category: 'Study', date: getTodayStr(), description: 'Data Structures Textbook' },
-  { amount: 280, category: 'Entertainment', date: getTodayStr(), description: 'Weekend Cinema Ticket' },
-  { amount: 95, category: 'Other', date: getTodayStr(), description: 'Stationery & Highlighter Set' }
-];
+// There are deliberately no seeded expenses. A new account starts at zero.
+const LEGACY_SAMPLE_EXPENSES = new Set([
+  '140|Food|Campus Canteen Lunch',
+  '50|Transport|Metro Smart Card Ride',
+  '450|Study|Data Structures Textbook',
+  '280|Entertainment|Weekend Cinema Ticket',
+  '95|Other|Stationery & Highlighter Set'
+]);
 
 function loadExpenses() {
   const raw = localStorage.getItem(EXPENSES_STORAGE_KEY);
   if (raw) {
     try {
-      expenses = JSON.parse(raw);
+      const storedExpenses = JSON.parse(raw);
+      expenses = Array.isArray(storedExpenses)
+        ? storedExpenses.filter((expense) => !LEGACY_SAMPLE_EXPENSES.has(`${expense.amount}|${expense.category}|${expense.description}`))
+        : [];
+      saveExpenses();
     } catch (e) {
       console.error('Failed to parse expenses', e);
-      expenses = [...INITIAL_SAMPLE_EXPENSES];
-      saveExpenses();
+      expenses = [];
     }
   } else {
-    expenses = [...INITIAL_SAMPLE_EXPENSES];
-    saveExpenses();
+    expenses = [];
   }
 }
 
@@ -554,11 +556,11 @@ function exportExpensesToCSV() {
 const SAVINGS_GOALS_KEY = 'student_money_goals';
 let savingsGoals = [];
 
-const INITIAL_SAMPLE_GOALS = [
-  { id: 1, title: 'Cloud Certification Exam', amount: 3500, saved: 2100, date: '2026-12-15' },
-  { id: 2, title: 'Hostel Semester Emergency Cushion', amount: 5000, saved: 3250, date: '2026-11-30' },
-  { id: 3, title: 'Ergonomic Coding Keyboard', amount: 2000, saved: 800, date: '2026-10-31' }
-];
+const LEGACY_SAMPLE_GOALS = new Set([
+  'Cloud Certification Exam',
+  'Hostel Semester Emergency Cushion',
+  'Ergonomic Coding Keyboard'
+]);
 
 function initSavingsSection() {
   const resultEl = document.getElementById('savingsResult');
@@ -576,14 +578,16 @@ function initSavingsSection() {
   const raw = localStorage.getItem(SAVINGS_GOALS_KEY);
   if (raw) {
     try {
-      savingsGoals = JSON.parse(raw);
-    } catch (e) {
-      savingsGoals = [...INITIAL_SAMPLE_GOALS];
+      const storedGoals = JSON.parse(raw);
+      savingsGoals = Array.isArray(storedGoals)
+        ? storedGoals.filter((goal) => !LEGACY_SAMPLE_GOALS.has(goal.title))
+        : [];
       saveGoals();
+    } catch (e) {
+      savingsGoals = [];
     }
   } else {
-    savingsGoals = [...INITIAL_SAMPLE_GOALS];
-    saveGoals();
+    savingsGoals = [];
   }
 
   function saveGoals() {
