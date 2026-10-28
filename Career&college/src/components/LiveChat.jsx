@@ -104,7 +104,6 @@ export default function LiveChat({ selectedCareer }) {
   const activeChannel = chat.selectedChannel === 'career'
     ? { ...storedActiveChannel, name: careerTitle, description: `Career-specific doubts, roadmaps, and guidance for ${careerTitle}.` }
     : storedActiveChannel;
-  const totalUnread = Object.values(chat.channels).reduce((total, channel) => total + channel.unread, 0);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -179,16 +178,7 @@ export default function LiveChat({ selectedCareer }) {
   };
 
   return (
-    <section className="mx-auto max-w-7xl space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 p-5 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-100"><Users className="h-4 w-4" /> Community space</div>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Ask, connect, and grow together.</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100">Your questions are matched to <strong className="text-white">{careerTitle}</strong>, so seniors and peers can give relevant help.</p>
-        </div>
-        <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur-sm"><span className="font-bold">{totalUnread}</span> unread community update{totalUnread === 1 ? '' : 's'}</div>
-      </div>
-
+    <section className="mx-auto max-w-7xl">
       <div className="grid min-h-[680px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[235px_minmax(0,1fr)_275px]">
         <aside className="border-b border-slate-200 bg-slate-50 p-3 lg:border-b-0 lg:border-r">
           <div className="mb-3 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">Channels</div>
@@ -201,12 +191,11 @@ export default function LiveChat({ selectedCareer }) {
               </button>
             ))}
           </div>
-          <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-800"><strong>Respectful space.</strong> Never post personal contact details, passwords, or financial information.</div>
         </aside>
 
         <div className="flex min-w-0 flex-col">
           <header className="border-b border-slate-200 px-4 py-4 sm:px-5">
-            <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-slate-900">{activeChannel.name}</h2><p className="mt-0.5 text-xs leading-5 text-slate-500">{activeChannel.description}</p></div><span className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Live discussion</span></div>
+            <div className="flex items-center justify-between gap-3"><h2 className="font-bold text-slate-900">{activeChannel.name}</h2><span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Live discussion</span></div>
           </header>
 
           <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-4 sm:p-5">
@@ -235,11 +224,10 @@ export default function LiveChat({ selectedCareer }) {
         </div>
 
         <aside className="border-t border-slate-200 bg-white p-4 lg:border-l lg:border-t-0">
-          <div className="mb-1 flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" /><h2 className="text-sm font-bold text-slate-900">Seniors & graduates</h2></div><p className="mb-4 text-xs leading-5 text-slate-500">Connect with people who can help you move forward.</p>
+          <div className="mb-4 flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" /><h2 className="text-sm font-bold text-slate-900">Seniors & graduates</h2></div>
           <div className="space-y-3">
             {seniorMembers.map((member) => { const connected = chat.connectedIds.includes(member.id); return <div key={member.id} className="rounded-xl border border-slate-200 p-3"><div className="flex gap-2.5"><div className="relative"><Avatar initials={member.initials} color={member.color} /><span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${member.online ? 'bg-emerald-500' : 'bg-slate-300'}`} /></div><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-800">{member.name}</p><p className="mt-0.5 text-[11px] leading-4 text-slate-500">{member.role}</p></div></div><div className="mt-3 flex gap-2"><button type="button" onClick={() => askSenior(member)} className="flex-1 rounded-lg bg-slate-100 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Ask doubt</button><button type="button" onClick={() => connectWith(member)} className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>{connected ? <Check className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}{connected ? 'Connected' : 'Connect'}</button></div></div>; })}
           </div>
-          <div className="mt-4 rounded-xl bg-slate-50 p-3 text-[11px] leading-5 text-slate-500"><strong className="text-slate-700">Local demo mode:</strong> your messages, attachments, connections, and read state are saved in this browser. A secure backend and accounts are needed to deliver messages to other real people.</div>
         </aside>
       </div>
     </section>

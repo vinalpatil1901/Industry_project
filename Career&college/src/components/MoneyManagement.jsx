@@ -20,12 +20,14 @@ export default function MoneyManagement({ activeSection }) {
   }, [activeSection]);
 
   return (
-    <iframe
-      ref={frameRef}
-      title="Money Management"
-      src={MONEY_APP_URL}
-      onLoad={(event) => syncMoneyFrame(event.currentTarget, activeSection)}
-      className="block h-[calc(100vh-69px)] min-h-[760px] w-full border-0 bg-slate-50"
-    />
+    <div className="h-full min-h-[620px]">
+      <iframe
+        ref={frameRef}
+        title="Money Management"
+        src={MONEY_APP_URL}
+        onLoad={(event) => syncMoneyFrame(event.currentTarget, activeSection)}
+        className="block h-full min-h-[620px] w-full border-0 bg-slate-50"
+      />
+    </div>
   );
 }

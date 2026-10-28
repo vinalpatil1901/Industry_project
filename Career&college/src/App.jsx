@@ -24,6 +24,10 @@ const MARKETPLACE_SECTIONS = {
 const SESSION_STORAGE_KEY = 'campus360-session-v1';
 const SmartStudy = lazy(() => import('./components/SmartStudy'));
 
+function WorkspaceHeading({ title }) {
+  return <header className="mx-auto mb-5 w-full max-w-7xl border-b border-slate-200 pb-4"><h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{title}</h1></header>;
+}
+
 function loadSession() {
   try {
     const saved = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY));
@@ -179,32 +183,39 @@ export default function App() {
           </div>
         </header>
 
-        <main className={isMoneyArea ? 'flex-1 overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
-          {isMoneyArea ? (
-            <MoneyManagement activeSection={navigation.section} />
-          ) : isMarketplaceArea ? (
-            <Marketplace activeSection={navigation.section} onNavigate={(section) => navigate('marketplace', section)} />
-          ) : isCommunityArea ? (
-            <LiveChat selectedCareer={selectedCareer} />
-          ) : isStudyArea ? (
-            <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
-          ) : navigation.section === 'survey' ? (
-            <CareerSurvey
-              surveyData={surveyData}
-              careerResults={careerResults}
-              selectedCareer={selectedCareer}
-              onSaveSurvey={handleSaveSurvey}
-              onSelectCareer={setSelectedCareer}
-              onGoToColleges={() => navigate('career', 'colleges')}
-            />
-          ) : (
-            <CollegeRecommendation
-              selectedCareer={selectedCareer}
-              careerResults={careerResults}
-              onSelectCareer={setSelectedCareer}
-              onGoToSurvey={() => navigate('career', 'survey')}
-            />
-          )}
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6 lg:p-8">
+          <WorkspaceHeading title={breadcrumbSection} />
+          <div className="min-h-0 flex-1">
+            {isMoneyArea ? (
+              <MoneyManagement activeSection={navigation.section} />
+            ) : isMarketplaceArea ? (
+              <Marketplace
+                activeSection={navigation.section}
+                onNavigate={(section) => navigate('marketplace', section)}
+                workspaceOffset={isDesktop ? (isCollapsed ? 68 : sidebarWidth) : 0}
+              />
+            ) : isCommunityArea ? (
+              <LiveChat selectedCareer={selectedCareer} />
+            ) : isStudyArea ? (
+              <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
+            ) : navigation.section === 'survey' ? (
+              <CareerSurvey
+                surveyData={surveyData}
+                careerResults={careerResults}
+                selectedCareer={selectedCareer}
+                onSaveSurvey={handleSaveSurvey}
+                onSelectCareer={setSelectedCareer}
+                onGoToColleges={() => navigate('career', 'colleges')}
+              />
+            ) : (
+              <CollegeRecommendation
+                selectedCareer={selectedCareer}
+                careerResults={careerResults}
+                onSelectCareer={setSelectedCareer}
+                onGoToSurvey={() => navigate('career', 'survey')}
+              />
+            )}
+          </div>
         </main>
       </div>
     </div>

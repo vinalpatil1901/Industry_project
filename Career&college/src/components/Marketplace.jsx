@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen, CheckCircle2, ChevronDown, Download, Edit3, FileText, Image,
   IndianRupee, LibraryBig, Loader2, PackageOpen, Plus, Search, ShoppingBag,
-  SlidersHorizontal, Store, Trash2, Upload, X,
+  SlidersHorizontal, Trash2, Upload, X,
 } from 'lucide-react';
+import MarketplaceListingForm from './MarketplaceListingForm';
 
 const STORAGE_KEY = 'campus360_marketplace_v1';
 const CURRENT_USER = { id: 'student-demo', name: 'Dinesh Shah', college: 'Campus360 Student' };
@@ -31,7 +32,7 @@ function isPhysical(listing) { return listing.type === 'Physical used book' || l
 
 const fieldClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 
-export default function Marketplace({ activeSection, onNavigate }) {
+export default function Marketplace({ activeSection, onNavigate, workspaceOffset = 0 }) {
   const [store, setStore] = useState(loadStore);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
@@ -98,12 +99,9 @@ export default function Marketplace({ activeSection, onNavigate }) {
     setSelected(null); notify('Demo payment verified. Access has been granted.');
   };
 
-  return <div className="mx-auto max-w-7xl space-y-6 pb-10">
+  return <div className="relative mx-auto max-w-7xl space-y-6 pb-10">
     {notice && <div role="status" className={`fixed right-5 top-5 z-[70] flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${notice.kind === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}><CheckCircle2 className="h-4 w-4" />{notice.message}</div>}
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-      <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center"><div><div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600"><Store className="h-4 w-4" />Campus360 marketplace</div><h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Notes &amp; Used Books Marketplace</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Find affordable study resources, share your own notes, and request used books from fellow students.</p></div><button onClick={() => { setEditing(null); setShowUpload(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"><Plus className="h-4 w-4" />List a resource</button></div>
-      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><b>Demo mode:</b> listings, uploads, requests, and simulated purchases are stored only in this browser. No real payment or protected-file security exists until a backend is connected.</div>
-    </section>
+    <div className="flex justify-end sm:absolute sm:right-0 sm:-top-[76px]"><button onClick={() => { setEditing(null); setShowUpload(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"><Plus className="h-4 w-4" />List a resource</button></div>
 
     {activeSection === 'dashboard' && <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={PackageOpen} label="Resources listed" value={published.length} /><Metric icon={Upload} label="My uploaded resources" value={myListings.length} onClick={() => onNavigate('listings')} /><Metric icon={LibraryBig} label="My purchases" value={purchases.length} onClick={() => onNavigate('purchases')} /><Metric icon={IndianRupee} label="My demo earnings" value={formatPrice(earnings)} /></div>
@@ -111,7 +109,7 @@ export default function Marketplace({ activeSection, onNavigate }) {
     </>}
     {activeSection === 'purchases' && <Purchases purchases={purchases} listings={store.listings} onBrowse={() => onNavigate('dashboard')} />}
     {activeSection === 'listings' && <Listings listings={myListings} requests={store.requests} onEdit={(listing) => { setEditing(listing); setShowUpload(true); }} onDelete={removeListing} onToggle={togglePublished} onAdd={() => { setEditing(null); setShowUpload(true); }} />}
-    {showUpload && <ListingForm initial={editing} onClose={() => { setShowUpload(false); setEditing(null); }} onSave={upsertListing} />}
+    {showUpload && <MarketplaceListingForm initial={editing} onClose={() => { setShowUpload(false); setEditing(null); }} onSave={upsertListing} workspaceOffset={workspaceOffset} />}
     {selected && <Details listing={selected} purchased={purchases.some((item) => item.listingId === selected.id && item.status === 'Paid')} onClose={() => setSelected(null)} onAction={() => purchase(selected)} />}
   </div>;
 }

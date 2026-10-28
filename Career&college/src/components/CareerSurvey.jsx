@@ -6,7 +6,6 @@ import {
   Briefcase, 
   GraduationCap, 
   Rocket, 
-  Zap,
   ChevronDown,
   ChevronUp,
   BookOpen,
@@ -15,22 +14,55 @@ import {
   Target
 } from 'lucide-react';
 
-const SAMPLE_PROFILE = {
-  qualification: "Undergraduate Degree (B.Tech/B.Sc)",
-  marksPercentage: "88",
-  stream: "Computer Science & Engineering",
-  favoriteSubjects: "Computer Science & Algorithms",
-  primaryInterest: "Artificial Intelligence & Deep Learning",
-  secondaryInterest: "Cloud Systems & Distributed Infrastructure",
-  coreAptitude: "Logical & Algorithmic Problem Solving",
-  hobbies: "Coding side projects, Robotics tinkering, Open source",
-  passion: "Architecting intelligent algorithms and high-scale software systems",
-  freeTimeActivity: "Building side projects & participating in hackathons",
-  workEnvironment: "Fast-Paced High Growth Startup",
-  careerMotive: "Technical Mastery & Pioneering Inventions",
-  preferredLearningStyle: "Hands-on Practical Building & Project-based",
-  futurePath: "Job" // Job / Higher Studies / Business
+const EMPTY_PROFILE = {
+  qualification: '', marksPercentage: '', stream: '', favoriteSubjects: '', primaryInterest: '', secondaryInterest: '',
+  coreAptitude: '', hobbies: '', passion: '', freeTimeActivity: '', workEnvironment: '', careerMotive: '',
+  preferredLearningStyle: '', futurePath: '',
 };
+
+const CUSTOM_OPTION_VALUE = '__add_custom_option__';
+
+function SurveySelect({ value, onValueChange, children, required = true }) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const providedValues = React.Children.toArray(children).map((child) => child.props.value);
+  const isCustomValue = Boolean(value) && !providedValues.includes(value);
+  const saveCustomValue = () => {
+    const customValue = draft.trim();
+    if (!customValue) return;
+    onValueChange(customValue);
+    setIsAdding(false);
+    setDraft('');
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <select
+          required={required}
+          value={value || ''}
+          onChange={(event) => {
+            if (event.target.value === CUSTOM_OPTION_VALUE) {
+              setDraft(isCustomValue ? value : '');
+              setIsAdding(true);
+              return;
+            }
+            setIsAdding(false);
+            onValueChange(event.target.value);
+          }}
+          className="w-full appearance-none rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 pr-9 text-xs text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+        >
+          <option value="" disabled>Select an option</option>
+          {children}
+          {isCustomValue && <option value={value}>{value}</option>}
+          <option value={CUSTOM_OPTION_VALUE}>＋ Add your own option</option>
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+      </div>
+      {isAdding && <div className="flex gap-2"><input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); saveCustomValue(); } }} autoFocus placeholder="Type your option" className="min-w-0 flex-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /><button type="button" onClick={saveCustomValue} disabled={!draft.trim()} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40">Add</button></div>}
+    </div>
+  );
+}
 
 export default function CareerSurvey({ 
   surveyData, 
@@ -40,7 +72,7 @@ export default function CareerSurvey({
   onSelectCareer, 
   onGoToColleges 
 }) {
-  const [formData, setFormData] = useState(surveyData || SAMPLE_PROFILE);
+  const [formData, setFormData] = useState(surveyData || EMPTY_PROFILE);
   const [isFormVisible, setIsFormVisible] = useState(!careerResults || careerResults.length === 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -49,10 +81,6 @@ export default function CareerSurvey({
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleFillSample = () => {
-    setFormData(SAMPLE_PROFILE);
   };
 
   const handleSubmit = (e) => {
@@ -271,25 +299,12 @@ export default function CareerSurvey({
       {isFormVisible && (
         <form onSubmit={handleSubmit} className="w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-8">
           
-          {/* Header Title with 1-Click Sample Profile Button */}
-          <div className="border-b border-slate-100 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="border-b border-slate-100 pb-5">
             <div>
               <h2 className="text-xl font-bold text-slate-900">
                 Complete Career & Academic Survey
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Provide accurate details about your academic standing, technical interests, personal lifestyle, and career aspirations.
-              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={handleFillSample}
-              className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors shrink-0 shadow-2xs"
-            >
-              <Zap className="w-3.5 h-3.5 text-blue-600" />
-              Fill Sample Profile
-            </button>
           </div>
 
           {/* SECTION 1: Academic Background & Performance */}
@@ -306,12 +321,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Highest / Current Qualification <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.qualification}
-                  onChange={(e) => handleInputChange('qualification', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.qualification} onValueChange={(value) => handleInputChange('qualification', value)}>
                   <option value="10th Standard / Secondary School">10th Standard / Secondary School</option>
                   <option value="12th Standard / Higher Secondary (Science/PCM)">12th Standard / Higher Secondary (Science/PCM)</option>
                   <option value="12th Standard / Higher Secondary (Commerce)">12th Standard / Higher Secondary (Commerce)</option>
@@ -320,7 +330,7 @@ export default function CareerSurvey({
                   <option value="Undergraduate Degree (B.Com/BBA)">Undergraduate Degree (B.Com/BBA)</option>
                   <option value="Diploma / Polytechnic">Diploma / Polytechnic</option>
                   <option value="Postgraduate Degree (M.Tech/M.S/MBA)">Postgraduate Degree (M.Tech/M.S/MBA)</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Marks / Percentage */}
@@ -345,12 +355,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Academic Stream / Discipline <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.stream}
-                  onChange={(e) => handleInputChange('stream', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.stream} onValueChange={(value) => handleInputChange('stream', value)}>
                   <option value="Computer Science & Engineering">Computer Science & Engineering</option>
                   <option value="Information Technology & Software">Information Technology & Software</option>
                   <option value="Electronics & Communication (ECE)">Electronics & Communication (ECE)</option>
@@ -359,7 +364,7 @@ export default function CareerSurvey({
                   <option value="Pure Mathematics & Statistics">Pure Mathematics & Statistics</option>
                   <option value="Life Sciences, Biotech & Pre-Med">Life Sciences, Biotech & Pre-Med</option>
                   <option value="Design, Arts & Media Communications">Design, Arts & Media Communications</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Favorite Subjects */}
@@ -367,12 +372,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Favorite Academic Subject <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.favoriteSubjects}
-                  onChange={(e) => handleInputChange('favoriteSubjects', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.favoriteSubjects} onValueChange={(value) => handleInputChange('favoriteSubjects', value)}>
                   <option value="Computer Science & Algorithms">Computer Science & Algorithms</option>
                   <option value="Mathematics & Calculus">Mathematics & Calculus</option>
                   <option value="Physics & Mechanics">Physics & Mechanics</option>
@@ -381,7 +381,7 @@ export default function CareerSurvey({
                   <option value="Biology & Genetics">Biology & Genetics</option>
                   <option value="Graphic Design, Art & Psychology">Graphic Design, Art & Psychology</option>
                   <option value="Business Studies & Management">Business Studies & Management</option>
-                </select>
+                </SurveySelect>
               </div>
 
             </div>
@@ -401,12 +401,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Primary Interest Domain <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.primaryInterest}
-                  onChange={(e) => handleInputChange('primaryInterest', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.primaryInterest} onValueChange={(value) => handleInputChange('primaryInterest', value)}>
                   <option value="Artificial Intelligence & Deep Learning">Artificial Intelligence & Deep Learning</option>
                   <option value="Cloud Systems & Distributed Infrastructure">Cloud Systems & Distributed Infrastructure</option>
                   <option value="Cybersecurity, Ethical Hacking & Networks">Cybersecurity, Ethical Hacking & Networks</option>
@@ -417,7 +412,7 @@ export default function CareerSurvey({
                   <option value="Biomedical Engineering & HealthTech">Biomedical Engineering & HealthTech</option>
                   <option value="Robotics, Embedded Systems & IoT">Robotics, Embedded Systems & IoT</option>
                   <option value="Technical Product Management">Technical Product Management</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Secondary Interest */}
@@ -425,12 +420,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Secondary Complementary Interest <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.secondaryInterest}
-                  onChange={(e) => handleInputChange('secondaryInterest', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.secondaryInterest} onValueChange={(value) => handleInputChange('secondaryInterest', value)}>
                   <option value="Cloud Systems & Distributed Infrastructure">Cloud Systems & Distributed Infrastructure</option>
                   <option value="Artificial Intelligence & Deep Learning">Artificial Intelligence & Deep Learning</option>
                   <option value="Data Science & Business Analytics">Data Science & Business Analytics</option>
@@ -439,7 +429,7 @@ export default function CareerSurvey({
                   <option value="Stock Markets & Corporate Valuation">Stock Markets & Corporate Valuation</option>
                   <option value="Hardware Architecture & Microcontrollers">Hardware Architecture & Microcontrollers</option>
                   <option value="Venture Creation & Product Strategy">Venture Creation & Product Strategy</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Core Intellectual Aptitude */}
@@ -447,19 +437,14 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Greatest Natural Strength / Aptitude <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.coreAptitude}
-                  onChange={(e) => handleInputChange('coreAptitude', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.coreAptitude} onValueChange={(value) => handleInputChange('coreAptitude', value)}>
                   <option value="Logical & Algorithmic Problem Solving">Logical & Algorithmic Problem Solving</option>
                   <option value="Visual, Spatial & Creative Design Intuition">Visual, Spatial & Creative Design Intuition</option>
                   <option value="Quantitative, Numerical & Statistical Analysis">Quantitative, Numerical & Statistical Analysis</option>
                   <option value="Systematic Debugging & Technical Troubleshooting">Systematic Debugging & Technical Troubleshooting</option>
                   <option value="Strategic Leadership, Communication & Negotiation">Strategic Leadership, Communication & Negotiation</option>
                   <option value="Scientific Experimentation & Research Meticulousness">Scientific Experimentation & Research Meticulousness</option>
-                </select>
+                </SurveySelect>
               </div>
 
             </div>
@@ -479,12 +464,7 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Primary Hobby <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.hobbies}
-                  onChange={(e) => handleInputChange('hobbies', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.hobbies} onValueChange={(value) => handleInputChange('hobbies', value)}>
                   <option value="Coding side projects, Robotics tinkering, Open source">Coding side projects & Open Source</option>
                   <option value="Competitive Programming & Algorithmic Problem Solving">Competitive Programming & Puzzles</option>
                   <option value="Digital Art, 3D Modeling & UI Design">Digital Art, 3D Modeling & UI Design</option>
@@ -496,7 +476,7 @@ export default function CareerSurvey({
                   <option value="Music Production & Audio Engineering">Music Production & Audio Engineering</option>
                   <option value="Community Outreach, Teaching & Volunteering">Community Outreach & Volunteering</option>
                   <option value="Sports, Chess & Strategic Board Games">Sports, Chess & Strategy Games</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Free time activity */}
@@ -504,19 +484,14 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Free Time Activity <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.freeTimeActivity}
-                  onChange={(e) => handleInputChange('freeTimeActivity', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.freeTimeActivity} onValueChange={(value) => handleInputChange('freeTimeActivity', value)}>
                   <option value="Building side projects & participating in hackathons">Building side projects & hackathons</option>
                   <option value="Designing interactive mockups & prototypes in Figma">Designing interactive UI mockups</option>
                   <option value="Analyzing financial market charts & macroeconomics">Analyzing financial market charts</option>
                   <option value="Reading scientific preprints & experimenting with code">Reading preprints & experimenting</option>
                   <option value="Brainstorming venture ideas & business models">Brainstorming business & startup ideas</option>
                   <option value="Playing strategy games or competitive esports">Playing competitive strategy games</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Work Environment */}
@@ -524,19 +499,14 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Preferred Work Culture <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.workEnvironment}
-                  onChange={(e) => handleInputChange('workEnvironment', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.workEnvironment} onValueChange={(value) => handleInputChange('workEnvironment', value)}>
                   <option value="Fast-Paced High Growth Startup">Fast-Paced High Growth Startup (High Ownership)</option>
                   <option value="Big Tech / Global Multinational Enterprise">Global Big Tech Enterprise (High Scale & Stability)</option>
                   <option value="Research & Academic Laboratory">Research & Academic Lab (Deep Science & Rigor)</option>
                   <option value="Remote / Digital Nomad Environment">Remote & Decentralized (High Flexibility)</option>
                   <option value="Quantitative Hedge Fund / Investment Bank">Hedge Fund / Investment Bank (High Stakes)</option>
                   <option value="Creative Design & Media Studio">Creative Design Studio (Artistic & Collaborative)</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Core Passion (Optional, no asterisk) */}
@@ -570,18 +540,13 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Primary Career Motive <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.careerMotive}
-                  onChange={(e) => handleInputChange('careerMotive', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.careerMotive} onValueChange={(value) => handleInputChange('careerMotive', value)}>
                   <option value="Technical Mastery & Pioneering Inventions">Technical Mastery & Pioneering Inventions</option>
                   <option value="Maximizing High-Income Potential & Rapid Wealth">Maximizing High-Income Potential & Rapid Wealth</option>
                   <option value="Building Scalable Tech Ventures as a Founder">Building Scalable Tech Ventures as a Founder</option>
                   <option value="Work-Life Balance, Job Security & Freedom">Work-Life Balance, Job Security & Freedom</option>
                   <option value="Creating Meaningful Societal / Healthcare Impact">Creating Meaningful Societal / Healthcare Impact</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Preferred Learning Style */}
@@ -589,18 +554,13 @@ export default function CareerSurvey({
                 <label className="text-xs font-bold text-slate-800 block">
                   Preferred Learning Mode <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  value={formData.preferredLearningStyle}
-                  onChange={(e) => handleInputChange('preferredLearningStyle', e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white"
-                >
+                <SurveySelect value={formData.preferredLearningStyle} onValueChange={(value) => handleInputChange('preferredLearningStyle', value)}>
                   <option value="Hands-on Practical Building & Project-based">Hands-on Practical Building & Project-based</option>
                   <option value="Deep Theoretical & Research-driven">Deep Theoretical & Research-driven</option>
                   <option value="Visual Video Demonstrations & Case Studies">Visual Video Demonstrations & Case Studies</option>
                   <option value="Mentorship & Peer Apprenticeship">Mentorship & Peer Apprenticeship</option>
                   <option value="Self-Paced Independent Documentation Reading">Self-Paced Independent Documentation Reading</option>
-                </select>
+                </SurveySelect>
               </div>
 
               {/* Future Path Selection: Job / Higher Studies / Business */}
