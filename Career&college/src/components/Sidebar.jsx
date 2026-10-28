@@ -5,11 +5,14 @@ import {
   ClipboardCheck,
   Compass,
   GraduationCap,
+  LibraryBig,
+  ListChecks,
   PanelLeftClose,
   PanelLeftOpen,
   PiggyBank,
   Trophy,
   TrendingUp,
+  Store,
   WalletCards,
   X,
 } from 'lucide-react';
@@ -24,6 +27,12 @@ const moneyLinks = [
   { id: 'savings', label: 'Small Savings, Big Future', icon: PiggyBank },
   { id: 'invest', label: 'Investment & Virtual Trading', icon: TrendingUp },
   { id: 'challenges', label: 'Savings Challenges', icon: Trophy },
+];
+
+const marketplaceLinks = [
+  { id: 'dashboard', label: 'Marketplace Dashboard', icon: Store },
+  { id: 'purchases', label: 'My Purchases', icon: LibraryBig },
+  { id: 'listings', label: 'My Listings', icon: ListChecks },
 ];
 
 function SectionHeader({ title, expanded, onClick }) {
@@ -55,6 +64,7 @@ export default function Sidebar({
 }) {
   const [isCareerExpanded, setIsCareerExpanded] = useState(true);
   const [isMoneyExpanded, setIsMoneyExpanded] = useState(true);
+  const [isMarketplaceExpanded, setIsMarketplaceExpanded] = useState(true);
 
   const navigate = (area, section) => onNavigate(area, section);
 
@@ -158,6 +168,11 @@ export default function Sidebar({
                 {isMoneyExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
               {isMoneyExpanded && moneyLinks.map((item) => iconButton('money', item))}
+              <div className="my-1 h-px w-8 bg-slate-800" />
+              <button type="button" onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} title="Toggle Marketplace section" className="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-white">
+                {isMarketplaceExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {isMarketplaceExpanded && marketplaceLinks.map((item) => iconButton('marketplace', item))}
             </div>
           ) : (
             <nav className="space-y-4 p-3" aria-label="Campus360 sections">
@@ -169,6 +184,11 @@ export default function Sidebar({
               <div className="border-t border-slate-800 pt-3">
                 <SectionHeader title="Money Management" expanded={isMoneyExpanded} onClick={() => setIsMoneyExpanded(!isMoneyExpanded)} />
                 {isMoneyExpanded && <div className="space-y-1 pt-0.5">{moneyLinks.map((item) => textButton('money', item))}</div>}
+              </div>
+
+              <div className="border-t border-slate-800 pt-3">
+                <SectionHeader title="Marketplace" expanded={isMarketplaceExpanded} onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} />
+                {isMarketplaceExpanded && <div className="space-y-1 pt-0.5">{marketplaceLinks.map((item) => textButton('marketplace', item))}</div>}
               </div>
             </nav>
           )}

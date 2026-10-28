@@ -42,6 +42,42 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/*
+ * The marketplace listing editor is rendered in a viewport-level dialog while
+ * the application sidebar stays fixed.  Give that form an explicit width
+ * instead of relying only on Tailwind's generated max-width utility: this
+ * keeps the dialog centred and prevents the sidebar from covering its left
+ * labels when the window is wide or the utility stylesheet is still loading.
+ */
+#root div:has(> form.max-w-3xl) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 24px 24px;
+}
+
+#root form.max-w-3xl {
+  position: relative;
+  width: min(960px, 100%);
+  max-width: 960px !important;
+  max-height: calc(100dvh - 48px);
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 767px) {
+  #root div:has(> form.max-w-3xl) {
+    padding: 56px 16px 16px;
+  }
+
+  #root form.max-w-3xl {
+    width: 100%;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 32px);
+  }
+}
+
 /* Custom modern scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

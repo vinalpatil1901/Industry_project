@@ -1333,7 +1333,7 @@ function initChallengesSection() {
 // 6. Navigation & Sidebar Controller
 // ==========================================================================
 function initNavigation() {
-  const navItems = document.querySelectorAll('.nav-item');
+  const navItems = document.querySelectorAll('.nav-item[data-section]');
   const sections = document.querySelectorAll('.content-section');
   const breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
   const sidebarToggle = document.getElementById('sidebarToggle');

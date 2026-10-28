@@ -228,6 +228,15 @@ body {
   color: #ffffff;
 }
 
+.static-section-header {
+  cursor: default;
+}
+
+.static-section-header:hover {
+  background-color: transparent;
+  color: #94a3b8;
+}
+
 .nav-section-title {
   white-space: nowrap;
   overflow: hidden;
@@ -343,6 +352,7 @@ body {
   font-weight: 500;
   transition: var(--transition-fast);
   user-select: none;
+  text-decoration: none;
 }
 
 .nav-link-content {

@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import CareerSurvey from './components/CareerSurvey';
 import CollegeRecommendation from './components/CollegeRecommendation';
 import MoneyManagement from './components/MoneyManagement';
+import Marketplace from './components/Marketplace';
 import { evaluateCareers } from './utils/careerEvaluation';
 
 const MONEY_SECTIONS = {
@@ -13,12 +14,23 @@ const MONEY_SECTIONS = {
   challenges: 'Savings Challenges',
 };
 
+const MARKETPLACE_SECTIONS = {
+  dashboard: 'Marketplace Dashboard',
+  purchases: 'My Purchases',
+  listings: 'My Listings',
+};
+
 function readNavigation() {
   const hash = window.location.hash.replace('#', '');
 
   if (hash.startsWith('money-')) {
     const section = hash.replace('money-', '');
     return { area: 'money', section: MONEY_SECTIONS[section] ? section : 'expense' };
+  }
+
+  if (hash.startsWith('marketplace-')) {
+    const section = hash.replace('marketplace-', '');
+    return { area: 'marketplace', section: MARKETPLACE_SECTIONS[section] ? section : 'dashboard' };
   }
 
   return {
@@ -52,7 +64,7 @@ export default function App() {
   }, []);
 
   const navigate = (area, section) => {
-    const hash = area === 'money' ? `money-${section}` : `career-${section}`;
+    const hash = area === 'money' ? `money-${section}` : area === 'marketplace' ? `marketplace-${section}` : `career-${section}`;
     window.history.pushState(null, '', `#${hash}`);
     setNavigation({ area, section });
     setIsMobileOpen(false);
@@ -67,8 +79,11 @@ export default function App() {
   };
 
   const isMoneyArea = navigation.area === 'money';
+  const isMarketplaceArea = navigation.area === 'marketplace';
   const breadcrumbSection = isMoneyArea
     ? MONEY_SECTIONS[navigation.section]
+    : isMarketplaceArea
+      ? MARKETPLACE_SECTIONS[navigation.section]
     : navigation.section === 'survey'
       ? 'Career Survey'
       : 'College Recommendation';
@@ -105,7 +120,7 @@ export default function App() {
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="font-bold text-slate-800">Campus360</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : 'Career'}</span>
+              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isMarketplaceArea ? 'Marketplace' : 'Career'}</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
               <span className="font-bold text-blue-600">{breadcrumbSection}</span>
             </div>
@@ -115,6 +130,8 @@ export default function App() {
         <main className={isMoneyArea ? 'flex-1 overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
           {isMoneyArea ? (
             <MoneyManagement activeSection={navigation.section} />
+          ) : isMarketplaceArea ? (
+            <Marketplace activeSection={navigation.section} onNavigate={(section) => navigate('marketplace', section)} />
           ) : navigation.section === 'survey' ? (
             <CareerSurvey
               surveyData={surveyData}
