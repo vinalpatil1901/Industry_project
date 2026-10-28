@@ -54,7 +54,7 @@ export default function MarketplaceModal({ item, onClose, onAddToCart }) {
             </div>
             <div>
               <span className="text-xs uppercase font-bold tracking-wider text-amber-400">
-                Campus360 Student Marketplace
+                Campus360 Learn & Earn
               </span>
               <h3 className="text-base font-bold text-white leading-tight">
                 Second-Hand Academic Listing

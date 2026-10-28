@@ -35,10 +35,9 @@ const fieldClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3
 export default function Marketplace({ activeSection, onNavigate, workspaceOffset = 0 }) {
   const [store, setStore] = useState(loadStore);
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('All');
-  const [subject, setSubject] = useState('All');
-  const [semester, setSemester] = useState('All');
-  const [priceFilter, setPriceFilter] = useState('All');
+  const [category, setCategory] = useState('Notes');
+  const [subject, setSubject] = useState('Subject');
+  const [priceFilter, setPriceFilter] = useState('Availability');
   const [sort, setSort] = useState('newest');
   const [visibleCount, setVisibleCount] = useState(6);
   const [selected, setSelected] = useState(null);
@@ -47,23 +46,22 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
   const [notice, setNotice] = useState(null);
 
   useEffect(() => saveStore(store), [store]);
-  useEffect(() => { setVisibleCount(6); }, [query, category, subject, semester, priceFilter, sort]);
+  useEffect(() => { setVisibleCount(6); }, [query, category, subject, priceFilter, sort]);
   const notify = (message, kind = 'success') => { setNotice({ message, kind }); window.setTimeout(() => setNotice(null), 3500); };
 
   const published = store.listings.filter((item) => item.status === 'Published');
   const myListings = store.listings.filter((item) => item.seller.id === CURRENT_USER.id);
-  const subjects = ['All', ...new Set(published.map((item) => item.subject))];
+  const subjects = ['Subject', 'All', ...new Set(published.map((item) => item.subject))];
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return published.filter((item) => {
       const searchable = `${item.title} ${item.subject} ${item.course} ${item.college} ${item.category}`.toLowerCase();
       return (!q || searchable.includes(q))
         && (category === 'All' || item.category === category)
-        && (subject === 'All' || item.subject === subject)
-        && (semester === 'All' || item.semester === semester)
-        && (priceFilter === 'All' || (priceFilter === 'Free' ? item.price === 0 : priceFilter === 'Under 100' ? item.price > 0 && item.price < 100 : item.price >= 100));
+        && (subject === 'Subject' || subject === 'All' || item.subject === subject)
+        && (priceFilter === 'Availability' || priceFilter === 'All' || (priceFilter === 'Free' ? item.price === 0 : priceFilter === 'Under 100' ? item.price > 0 && item.price < 100 : item.price >= 100));
     }).sort((a, b) => sort === 'price-low' ? a.price - b.price : sort === 'price-high' ? b.price - a.price : b.createdAt.localeCompare(a.createdAt));
-  }, [published, query, category, subject, semester, priceFilter, sort]);
+  }, [published, query, category, subject, priceFilter, sort]);
 
   const purchases = store.purchases.filter((item) => item.buyerId === CURRENT_USER.id);
   const earnings = store.purchases.filter((item) => item.sellerId === CURRENT_USER.id && item.status === 'Paid').reduce((total, item) => total + item.price, 0);
@@ -105,7 +103,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
 
     {activeSection === 'dashboard' && <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={PackageOpen} label="Resources listed" value={published.length} /><Metric icon={Upload} label="My uploaded resources" value={myListings.length} onClick={() => onNavigate('listings')} /><Metric icon={LibraryBig} label="My purchases" value={purchases.length} onClick={() => onNavigate('purchases')} /><Metric icon={IndianRupee} label="My demo earnings" value={formatPrice(earnings)} /></div>
-      <BrowsePanel {...{ query, setQuery, category, setCategory, subject, setSubject, semester, setSemester, priceFilter, setPriceFilter, sort, setSort, subjects, filtered, visibleCount, setVisibleCount, setSelected }} />
+      <BrowsePanel {...{ query, setQuery, category, setCategory, subject, setSubject, priceFilter, setPriceFilter, sort, setSort, subjects, filtered, visibleCount, setVisibleCount, setSelected }} />
     </>}
     {activeSection === 'purchases' && <Purchases purchases={purchases} listings={store.listings} onBrowse={() => onNavigate('dashboard')} />}
     {activeSection === 'listings' && <Listings listings={myListings} requests={store.requests} onEdit={(listing) => { setEditing(listing); setShowUpload(true); }} onDelete={removeListing} onToggle={togglePublished} onAdd={() => { setEditing(null); setShowUpload(true); }} />}
@@ -116,7 +114,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
 
 function Metric({ icon: Icon, label, value, onClick }) { return <button type="button" onClick={onClick} className={`rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm ${onClick ? 'transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md' : 'cursor-default'}`}><Icon className="h-5 w-5 text-blue-600" /><div className="mt-3 text-2xl font-extrabold text-slate-900">{value}</div><div className="mt-1 text-xs font-semibold text-slate-500">{label}</div></button>; }
 
-function BrowsePanel(props) { const { query, setQuery, category, setCategory, subject, setSubject, semester, setSemester, priceFilter, setPriceFilter, sort, setSort, subjects, filtered, visibleCount, setVisibleCount, setSelected } = props; return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="font-bold text-slate-900">Browse resources</h2><p className="mt-1 text-xs text-slate-500">Recently added study materials from students.</p></div><div className="relative w-full lg:w-80"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500" placeholder="Search notes, books, subjects…" /></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><Select value={category} setValue={setCategory} options={CATEGORIES} /><Select value={subject} setValue={setSubject} options={subjects} /><Select value={semester} setValue={setSemester} options={['All', '1', '2', '3', '4', '5', '6', '7', '8'].map((item) => item === 'All' ? item : `Semester ${item}`)} normalize={(v) => v.replace('Semester ', '')} display={(v) => v === 'All' ? 'All semesters' : `Semester ${v}`} /><Select value={priceFilter} setValue={setPriceFilter} options={['All', 'Free', 'Under 100', '100 and above']} /><Select value={sort} setValue={setSort} options={['newest', 'price-low', 'price-high']} display={(v) => ({ newest: 'Newest first', 'price-low': 'Price: low to high', 'price-high': 'Price: high to low' })[v]} /></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.slice(0, visibleCount).map((listing) => <ResourceCard key={listing.id} listing={listing} onView={() => setSelected(listing)} />)}</div>{filtered.length === 0 && <Empty title="No matching resources" text="Try changing your search or filters." />}{visibleCount < filtered.length && <div className="mt-5 text-center"><button onClick={() => setVisibleCount((count) => count + 6)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Load more</button></div>}</section>; }
+function BrowsePanel(props) { const { query, setQuery, category, setCategory, subject, setSubject, priceFilter, setPriceFilter, sort, setSort, subjects, filtered, visibleCount, setVisibleCount, setSelected } = props; return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold text-slate-900">Browse resources</h2><div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><Select value={category} setValue={setCategory} options={CATEGORIES} /><Select value={subject} setValue={setSubject} options={subjects} /><Select value={priceFilter} setValue={setPriceFilter} options={['Availability', 'All', 'Free', 'Under 100', '100 and above']} /><Select value={sort} setValue={setSort} options={['newest', 'price-low', 'price-high']} display={(v) => ({ newest: 'Price range', 'price-low': 'Price: low to high', 'price-high': 'Price: high to low' })[v]} /><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500" placeholder="Search resources…" /></div></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.slice(0, visibleCount).map((listing) => <ResourceCard key={listing.id} listing={listing} onView={() => setSelected(listing)} />)}</div>{filtered.length === 0 && <Empty title="No matching resources" text="Try changing your search or filters." />}{visibleCount < filtered.length && <div className="mt-5 text-center"><button onClick={() => setVisibleCount((count) => count + 6)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Load more</button></div>}</section>; }
 
 function Select({ value, setValue, options, normalize = (v) => v, display = (v) => v }) { return <div className="relative"><select value={value} onChange={(e) => setValue(normalize(e.target.value))} className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500">{options.map((item) => <option key={item} value={item}>{display(item)}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-2 h-4 w-4 text-slate-400" /></div>; }
 

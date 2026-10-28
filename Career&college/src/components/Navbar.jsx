@@ -78,13 +78,13 @@ export default function Navbar({ activeView, setActiveView, onResetSurvey, curre
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }, 100);
                 } else {
-                  alert("Please complete the Career Survey to unlock personalized textbook bundles on Campus360 Marketplace!");
+                  alert("Please complete the Career Survey to unlock personalized textbook bundles on Campus360 Learn & Earn!");
                 }
               }}
               className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-100/70 transition-all flex items-center gap-2 group"
             >
               <ShoppingBag className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-              <span>Student Marketplace</span>
+              <span>Learn & Earn</span>
               <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full border border-amber-200">
                 2nd-Hand Books
               </span>

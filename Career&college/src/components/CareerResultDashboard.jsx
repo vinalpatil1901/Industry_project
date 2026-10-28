@@ -524,7 +524,7 @@ export default function CareerResultDashboard({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
-                  Campus360 Student Marketplace Integration
+                  Campus360 Learn & Earn Integration
                 </span>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
                   Verified Seniors
@@ -643,7 +643,7 @@ export default function CareerResultDashboard({
             }}
             className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-xs"
           >
-            <span>Open Campus360 Marketplace Hub</span>
+            <span>Open Campus360 Learn & Earn Hub</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

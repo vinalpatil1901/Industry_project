@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import campusMascot from '../assets/campus360-mascot.jpeg';
 import {
   ChevronDown,
   ChevronUp,
   BrainCircuit,
   ClipboardCheck,
-  Compass,
   GraduationCap,
   LibraryBig,
   ListChecks,
@@ -27,12 +27,12 @@ const careerLinks = [
 const moneyLinks = [
   { id: 'expense', label: 'Daily Expense Tracker', icon: WalletCards },
   { id: 'savings', label: 'Small Savings, Big Future', icon: PiggyBank },
-  { id: 'invest', label: 'Investment & Virtual Trading', icon: TrendingUp },
+  { id: 'invest', label: 'Future Investment', icon: TrendingUp },
   { id: 'challenges', label: 'Savings Challenges', icon: Trophy },
 ];
 
 const marketplaceLinks = [
-  { id: 'dashboard', label: 'Marketplace Dashboard', icon: Store },
+  { id: 'dashboard', label: 'Learn & Earn', icon: Store },
   { id: 'purchases', label: 'My Purchases', icon: LibraryBig },
   { id: 'listings', label: 'My Listings', icon: ListChecks },
 ];
@@ -146,8 +146,8 @@ export default function Sidebar({
         <div>
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-2 border-b border-[#1e293b] px-2 py-3">
-              <button type="button" onClick={() => setIsCollapsed(false)} title="Expand sidebar" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563eb] text-white shadow-md transition-colors hover:bg-[#3b82f6]">
-                <Compass className="h-5 w-5" />
+              <button type="button" onClick={() => setIsCollapsed(false)} title="Expand sidebar" className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white shadow-md transition-transform hover:scale-105">
+                <img src={campusMascot} alt="Campus360 mascot" className="h-full w-full object-contain" />
               </button>
               <button type="button" onClick={() => setIsCollapsed(false)} title="Expand sidebar" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#334155] bg-[#1e293b]/40 text-[#cbd5e1] transition-colors hover:bg-[#1e293b]">
                 <PanelLeftOpen className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function Sidebar({
           ) : (
             <div className="flex h-16 items-center justify-between border-b border-[#1e293b] px-4">
               <div className="flex min-w-0 items-center gap-2.5 overflow-hidden">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#2563eb] text-white shadow-sm"><Compass className="h-5 w-5" /></div>
+                <img src={campusMascot} alt="Campus360 mascot" className="h-8 w-8 shrink-0 rounded-lg bg-white object-contain shadow-sm" />
                 <div className="truncate">
                   <span className="text-base font-bold tracking-tight text-white">Campus<span className="font-extrabold text-[#60a5fa]">360</span></span>
                   <span className="block truncate text-[10px] font-medium text-[#94a3b8]">Academic Platform</span>
@@ -191,7 +191,7 @@ export default function Sidebar({
               </button>
               {isMoneyExpanded && moneyLinks.map((item) => iconButton('money', item))}
               <div className="my-1 h-px w-8 bg-[#1e293b]" />
-              <button type="button" onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} title="Toggle Marketplace section" className="flex h-7 w-7 items-center justify-center rounded text-[#94a3b8] hover:bg-[#1e293b] hover:text-white">
+              <button type="button" onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} title="Toggle Learn & Earn section" className="flex h-7 w-7 items-center justify-center rounded text-[#94a3b8] hover:bg-[#1e293b] hover:text-white">
                 {isMarketplaceExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
               {isMarketplaceExpanded && marketplaceLinks.map((item) => iconButton('marketplace', item))}
@@ -219,7 +219,7 @@ export default function Sidebar({
               </div>
 
               <div className="border-t border-[#1e293b] pt-3">
-                <SectionHeader title="Marketplace" expanded={isMarketplaceExpanded} onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} />
+                <SectionHeader title="Learn & Earn" expanded={isMarketplaceExpanded} onClick={() => setIsMarketplaceExpanded(!isMarketplaceExpanded)} />
                 {isMarketplaceExpanded && <div className="space-y-1 pt-0.5">{marketplaceLinks.map((item) => textButton('marketplace', item))}</div>}
               </div>
             </nav>

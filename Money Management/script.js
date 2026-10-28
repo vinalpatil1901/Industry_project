@@ -43,7 +43,7 @@ function getMonthKey(dateStr) {
 const EXPENSES_STORAGE_KEY = 'student_money_expenses';
 let expenses = [];
 let activeCategoryFilter = 'All';
-let isCurrentMonthOnlyFilter = false;
+let selectedMonthFilter = 'all';
 let categoryChartInstance = null;
 
 // Initial sample data to populate dashboard on first launch
@@ -77,21 +77,24 @@ function saveExpenses() {
 
 function updateExpenseMetrics() {
   const today = getTodayStr();
-  const currentMonthKey = getMonthKey(today);
+  const currentMonthKey = selectedMonthFilter !== 'all' ? selectedMonthFilter : getMonthKey(today);
+  const selectedExpenses = expenses.filter((exp) =>
+    getMonthKey(exp.date) === currentMonthKey
+    && (activeCategoryFilter === 'All' || exp.category === activeCategoryFilter)
+  );
+  const latestDate = selectedExpenses.map((exp) => exp.date).sort().at(-1) || today;
 
   let dailyTotal = 0;
   let monthlyTotal = 0;
   const daysInMonthSet = new Set();
 
-  expenses.forEach(exp => {
+  selectedExpenses.forEach(exp => {
     const amt = Number(exp.amount) || 0;
-    if (exp.date === today) {
+    if (exp.date === latestDate) {
       dailyTotal += amt;
     }
-    if (getMonthKey(exp.date) === currentMonthKey) {
-      monthlyTotal += amt;
-      daysInMonthSet.add(exp.date);
-    }
+    monthlyTotal += amt;
+    daysInMonthSet.add(exp.date);
   });
 
   const loggedDays = Math.max(daysInMonthSet.size, 1);
@@ -106,30 +109,30 @@ function updateExpenseMetrics() {
   const activeMonthBadge = document.getElementById('activeMonthBadge');
   const monthlyTotalFoot = document.getElementById('monthlyTotalFoot');
   const todayDateLabel = document.getElementById('todayDateLabel');
+  const dailySpendTitle = document.getElementById('dailySpendTitle');
 
   if (dailyTotalEl) dailyTotalEl.textContent = formatINR(dailyTotal);
   if (monthlyTotalEl) monthlyTotalEl.textContent = formatINR(monthlyTotal);
   if (dailyAvgEl) dailyAvgEl.textContent = formatINR(dailyAverage);
-  if (totalEntriesVal) totalEntriesVal.textContent = expenses.length;
-  if (totalEntriesCount) totalEntriesCount.textContent = `${expenses.length} Total`;
+  if (totalEntriesVal) totalEntriesVal.textContent = selectedExpenses.length;
+  if (totalEntriesCount) totalEntriesCount.textContent = `${selectedExpenses.length} Total`;
 
-  const monthLabel = getMonthYearLabel(today);
+  const monthLabel = getMonthYearLabel(`${currentMonthKey}-01`);
   if (activeMonthBadge) activeMonthBadge.textContent = monthLabel;
   if (monthlyTotalFoot) monthlyTotalFoot.textContent = `Total spent in ${monthLabel}`;
-  if (todayDateLabel) todayDateLabel.textContent = `Recorded for ${today}`;
+  if (dailySpendTitle) dailySpendTitle.textContent = latestDate === today ? "Today's Spend" : "Latest Day's Spend";
+  if (todayDateLabel) todayDateLabel.textContent = selectedExpenses.length ? `Recorded for ${latestDate}` : 'No expenses in this selection';
 }
 
 function getFilteredExpenses() {
   const searchVal = (document.getElementById('expenseSearchInput')?.value || '').toLowerCase().trim();
-  const currentMonthKey = getMonthKey(getTodayStr());
-
   return expenses.filter(exp => {
     // Category chip filter
     if (activeCategoryFilter !== 'All' && exp.category !== activeCategoryFilter) {
       return false;
     }
-    // Current month toggle
-    if (isCurrentMonthOnlyFilter && getMonthKey(exp.date) !== currentMonthKey) {
+    // Month selector
+    if (selectedMonthFilter !== 'all' && getMonthKey(exp.date) !== selectedMonthFilter) {
       return false;
     }
     // Search query filter
@@ -142,6 +145,19 @@ function getFilteredExpenses() {
     }
     return true;
   });
+}
+
+function renderMonthFilterOptions() {
+  const monthFilter = document.getElementById('expenseMonthFilter');
+  if (!monthFilter) return;
+  const previousValue = selectedMonthFilter;
+  const months = [...new Set(expenses.map((expense) => getMonthKey(expense.date)).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a));
+  monthFilter.innerHTML = '<option value="all">All months</option>' + months
+    .map((month) => `<option value="${month}">${getMonthYearLabel(`${month}-01`)}</option>`)
+    .join('');
+  selectedMonthFilter = months.includes(previousValue) ? previousValue : 'all';
+  monthFilter.value = selectedMonthFilter;
 }
 
 function renderExpenseTable() {
@@ -225,8 +241,8 @@ function renderCategoryChart() {
 
   const standardCategories = ['Food', 'Transport', 'Study', 'Entertainment', 'Other'];
   const today = getTodayStr();
-  const currentMonthKey = getMonthKey(today);
-  const currentMonthName = getMonthYearLabel(today);
+  const currentMonthKey = selectedMonthFilter !== 'all' ? selectedMonthFilter : getMonthKey(today);
+  const currentMonthName = getMonthYearLabel(`${currentMonthKey}-01`);
 
   if (chartMonthSub) {
     chartMonthSub.textContent = `Month: ${currentMonthName} (Active Term)`;
@@ -243,8 +259,9 @@ function renderCategoryChart() {
 
   let totalMonthSpend = 0;
   expenses.forEach(exp => {
-    // If expense belongs to current month
-    if (getMonthKey(exp.date) === currentMonthKey) {
+    // Include only the selected month and category (when a category chip is active).
+    if (getMonthKey(exp.date) === currentMonthKey
+      && (activeCategoryFilter === 'All' || exp.category === activeCategoryFilter)) {
       const cat = exp.category || 'Other';
       const amt = Number(exp.amount) || 0;
       if (categoryTotals[cat] !== undefined) {
@@ -260,9 +277,12 @@ function renderCategoryChart() {
     monthlySpendBadge.textContent = `${formatINR(totalMonthSpend)} Spent`;
   }
 
-  const chartLabels = standardCategories;
-  const chartData = standardCategories.map(c => categoryTotals[c]);
-  const chartColors = standardCategories.map(c => getCategoryColor(c));
+  const chartCategories = activeCategoryFilter === 'All'
+    ? standardCategories
+    : [activeCategoryFilter];
+  const chartLabels = chartCategories;
+  const chartData = chartCategories.map(c => categoryTotals[c]);
+  const chartColors = chartCategories.map(c => getCategoryColor(c));
 
   // Destroy previous chart instance cleanly
   if (categoryChartInstance) {
@@ -277,7 +297,7 @@ function renderCategoryChart() {
     data: {
       labels: chartLabels,
       datasets: [{
-        data: hasData ? chartData : [1, 1, 1, 1, 1],
+        data: hasData ? chartData : chartCategories.map(() => 1),
         backgroundColor: hasData ? chartColors : ['#e2e8f0', '#cbd5e1', '#e2e8f0', '#cbd5e1', '#e2e8f0'],
         borderWidth: 2,
         borderColor: '#ffffff',
@@ -309,7 +329,7 @@ function renderCategoryChart() {
   // Render comprehensive category breakdown list
   if (legendContainer) {
     legendContainer.innerHTML = '';
-    standardCategories.forEach(cat => {
+    chartCategories.forEach(cat => {
       const amt = categoryTotals[cat];
       const pct = totalMonthSpend > 0 ? ((amt / totalMonthSpend) * 100).toFixed(1) : '0.0';
       const color = getCategoryColor(cat);
@@ -332,6 +352,7 @@ function renderCategoryChart() {
 }
 
 function refreshExpenseSection() {
+  renderMonthFilterOptions();
   updateExpenseMetrics();
   renderExpenseTable();
   renderCategoryChart();
@@ -346,7 +367,8 @@ function initExpenseForm() {
   const descriptionInput = document.getElementById('description');
   const editIndexInput = document.getElementById('editExpenseIndex');
   const submitBtnText = document.getElementById('expenseSubmitBtnText');
-  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const editExpenseBtn = document.getElementById('editExpenseBtn');
+  const editExpenseBtnText = document.getElementById('editExpenseBtnText');
   const formPanelTitle = document.getElementById('formPanelTitle');
   const formModeTag = document.getElementById('formModeTag');
 
@@ -385,16 +407,44 @@ function initExpenseForm() {
     refreshExpenseSection();
   });
 
-  // Cancel Edit button
-  cancelEditBtn.addEventListener('click', () => {
-    resetFormState();
+  const startEditingExpense = (idx) => {
+    const exp = expenses[idx];
+    if (!exp) return;
+    editIndexInput.value = idx;
+    amountInput.value = exp.amount;
+    categoryInput.value = exp.category;
+    dateInput.value = exp.date;
+    descriptionInput.value = exp.description || '';
+    if (submitBtnText) submitBtnText.textContent = 'Save Changes';
+    if (editExpenseBtnText) editExpenseBtnText.textContent = 'Cancel Edit';
+    if (formPanelTitle) formPanelTitle.textContent = `Edit Expense #${idx + 1}`;
+    if (formModeTag) {
+      formModeTag.textContent = 'Editing';
+      formModeTag.className = 'panel-tag blue';
+    }
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    amountInput.focus();
+  };
+
+  // Edit the newest visible expense, or cancel the current edit.
+  if (editExpenseBtn) editExpenseBtn.addEventListener('click', () => {
+    if (parseInt(editIndexInput.value, 10) >= 0) {
+      resetFormState();
+      return;
+    }
+    const newestVisibleExpense = [...getFilteredExpenses()].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    if (!newestVisibleExpense) {
+      alert('There are no matching expenses to edit.');
+      return;
+    }
+    startEditingExpense(expenses.indexOf(newestVisibleExpense));
   });
 
   function resetFormState() {
     form.reset();
     editIndexInput.value = '-1';
     if (submitBtnText) submitBtnText.textContent = 'Add Expense';
-    if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
+    if (editExpenseBtnText) editExpenseBtnText.textContent = 'Edit Expense';
     if (formPanelTitle) formPanelTitle.textContent = 'Add New Expense';
     if (formModeTag) {
       formModeTag.textContent = 'New Entry';
@@ -424,23 +474,7 @@ function initExpenseForm() {
         refreshExpenseSection();
       }
     } else if (action === 'edit') {
-      const exp = expenses[idx];
-      editIndexInput.value = idx;
-      amountInput.value = exp.amount;
-      categoryInput.value = exp.category;
-      dateInput.value = exp.date;
-      descriptionInput.value = exp.description || '';
-
-      if (submitBtnText) submitBtnText.textContent = 'Save Changes';
-      if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
-      if (formPanelTitle) formPanelTitle.textContent = `Edit Expense #${idx + 1}`;
-      if (formModeTag) {
-        formModeTag.textContent = 'Editing';
-        formModeTag.className = 'panel-tag blue';
-      }
-
-      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      amountInput.focus();
+      startEditingExpense(idx);
     }
   });
 
@@ -462,20 +496,18 @@ function initExpenseForm() {
       chip.classList.add('active');
       activeCategoryFilter = chip.dataset.category || 'All';
       renderExpenseTable();
+      updateExpenseMetrics();
+      renderCategoryChart();
     });
   }
 
-  // "This Month Only" filter button
-  const filterCurrentMonthBtn = document.getElementById('filterCurrentMonthBtn');
-  if (filterCurrentMonthBtn) {
-    filterCurrentMonthBtn.addEventListener('click', () => {
-      isCurrentMonthOnlyFilter = !isCurrentMonthOnlyFilter;
-      filterCurrentMonthBtn.classList.toggle('active', isCurrentMonthOnlyFilter);
-      filterCurrentMonthBtn.style.backgroundColor = isCurrentMonthOnlyFilter ? '#2563eb' : '';
-      filterCurrentMonthBtn.style.color = isCurrentMonthOnlyFilter ? '#ffffff' : '';
-      renderExpenseTable();
-    });
-  }
+  const monthFilter = document.getElementById('expenseMonthFilter');
+  if (monthFilter) monthFilter.addEventListener('change', () => {
+    selectedMonthFilter = monthFilter.value;
+    renderExpenseTable();
+    updateExpenseMetrics();
+    renderCategoryChart();
+  });
 
   // Export CSV
   const exportBtn = document.getElementById('exportDataBtn');
@@ -747,7 +779,7 @@ function initSavingsSection() {
 }
 
 // ==========================================================================
-// 4. Section 3: Investment & Virtual Trading
+// 4. Section 3: Future Investment
 // ==========================================================================
 const INVEST_STORAGE_KEY = 'student_money_investment_v2';
 const INITIAL_CASH = 10000;
@@ -782,6 +814,58 @@ function initInvestSection() {
   const profitValEl = document.getElementById('investProfitValue');
   const holdingsBadge = document.getElementById('holdingsCountBadge');
   const resetBtn = document.getElementById('resetInvestBalanceBtn');
+  const sipMonthlyAmount = document.getElementById('sipMonthlyAmount');
+  const sipYears = document.getElementById('sipYears');
+  const sipAnnualReturn = document.getElementById('sipAnnualReturn');
+  const sipTotalInvested = document.getElementById('sipTotalInvested');
+  const sipEstimatedReturns = document.getElementById('sipEstimatedReturns');
+  const sipFinalValue = document.getElementById('sipFinalValue');
+
+  const updateSipCalculator = () => {
+    if (!sipMonthlyAmount || !sipYears || !sipAnnualReturn) return;
+    const monthlyAmount = Math.max(0, Number(sipMonthlyAmount.value) || 0);
+    const months = Math.max(0, Number(sipYears.value) || 0) * 12;
+    const monthlyRate = Math.max(0, Number(sipAnnualReturn.value) || 0) / 100 / 12;
+    const totalInvested = monthlyAmount * months;
+    const finalValue = monthlyRate === 0
+      ? totalInvested
+      : monthlyAmount * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate);
+    if (sipTotalInvested) sipTotalInvested.textContent = formatINR(totalInvested);
+    if (sipEstimatedReturns) sipEstimatedReturns.textContent = formatINR(finalValue - totalInvested);
+    if (sipFinalValue) sipFinalValue.textContent = formatINR(finalValue);
+  };
+
+  [sipMonthlyAmount, sipYears, sipAnnualReturn].forEach((input) => input?.addEventListener('input', updateSipCalculator));
+  updateSipCalculator();
+
+  const sipStories = [
+    ['Student SIP', 'Aagam Jain — a student who started SIPs', 'Mint', 'https://www.livemint.com/money/personal-finance/saving-requires-discipline-especially-when-youre-young-and-not-earning-says-student-aagam-jain-151679771742500.html'],
+    ['Student SIP', 'Rishi Raj Arya — starting with ₹100 SIPs', 'Business Standard', 'https://www.business-standard.com/finance/personal-finance/wealth-whispers-corporate-exec-explains-how-rs-100-sip-changed-his-life-125101500713_1.html'],
+    ['Student SIP', 'Learning to budget, save and start a ₹1,000 SIP', 'Business Standard', 'https://www.business-standard.com/amp/finance/personal-finance/i-hated-maths-and-ignored-money-now-i-track-save-and-invest-smart-125091700784_1.html'],
+    ['Student SIP', 'Uma Shanker — starting with a ₹500 SIP', 'The Economic Times', 'https://economictimes.indiatimes.com/mf/analysis/success-stories-this-lakhpati-started-with-an-sip-of-rs-500-in-an-elss-mutual-fund/articleshow/72948999.cms'],
+    ['Professional', 'Three financial professionals promoting regular SIP investing', 'Cafemutual', 'https://cafemutual.com/news/tarraki/429-three-mfds-conduct-successful-sip-drives'],
+    ['Professional', 'Two financial professionals’ SIP awareness journeys', 'Cafemutual', 'https://cafemutual.com/news/tarraki/31672-meet-two-mfds-who-conducted-successful-sip-drives'],
+    ['Professional', 'A financial professional’s SIP initiative', 'Cafemutual', 'https://cafemutual.com/news/tarraki/360-meet-the-mfd-who-started-237-sips-worth-rs21-lakh-in-a-single-day'],
+    ['Professional', 'Promoting financial planning through SIPs', 'Cafemutual', 'https://cafemutual.com/news/tarraki/419-2-mfds-independently-conduct-the-first-successful-drive-of-2022'],
+    ['Professional', 'A young financial professional continuing a family legacy', 'Cafemutual', 'https://cafemutual.com/news/tarraki/32130-meet-the-second-generation-mfd-who-did-111-sips-in-a-single-day'],
+    ['Investment Journey', 'Pratibha Jadhav — from a modest start to a larger portfolio', 'Mint', 'https://www.livemint.com/money/personal-finance/sip-savings-financial-journey-stocks-portfolio-insurance-mutual-funds-mfs-hybrid-fund-elss-nps-11735799980545.html'],
+    ['Investment Journey', 'R. Chandrashekar — helping fund his son’s education', 'Mint', 'https://www.livemint.com/videos/money/how-a-rs-1000-sip-helped-this-mumbai-man-fund-his-sons-rs-85-lakh-mba-course-in-london-11713528424727.html'],
+    ['Investment Journey', 'Three investors who continued SIPs for over a decade', 'The Economic Times', 'https://economictimes.indiatimes.com/wealth/invest/3-investors-who-ran-mutual-fund-sips-for-a-decade-and-hit-gold-what-was-their-strategy/articleshow/120414068.cms'],
+    ['Investment Journey', 'A modest ₹1,800 SIP over 20 years', 'Cafemutual', 'https://cafemutual.com/news/tarraki/29684-real-life-story-how-a-modest-sip-of-1800-grew-to-8-crore-in-20-years'],
+    ['Investment Journey', 'A long-running SIP and the power of time', 'Cafemutual', 'https://cafemutual.com/news/tarraki/33060-how-a-forgotten-sip-of-rs10000-makes-an-investor-a-crorepati'],
+    ['Investment Journey', 'Autobiography of an SIP', 'Value Research', 'https://shop.valueresearchonline.com/stories/225571/autobiography-of-an-sip/'],
+    ['Investment Journey', 'Vijay Athlye — learning discipline after setbacks', 'Value Research', 'https://www.valueresearchonline.com/stories/35365/be-disciplined-and-get-rich/'],
+    ['Investment Journey', 'Staying invested through market crises', 'Moneycontrol', 'https://www.moneycontrol.com/news/business/personal-finance/what-happens-when-you-stay-invested-through-every-market-crisis-two-investors-share-their-journey-13958566.html/amp'],
+    ['Investment Journey', 'FinEdge — collection of real investing journeys', 'FinEdge', 'https://www.finedge.in/success-stories'],
+    ['Investment Journey', 'Sham Ramesh Wagle — goal-based investing', 'FinEdge', 'https://www.finedge.in/success-stories/sham-ramesh-wagle'],
+    ['Investment Journey', 'A retired teacher’s long-term investment journey', 'Cafemutual', 'https://cafemutual.com/news/tarraki/30782-mfd-helps-a-retired-teacher-reach-a-rs-110-crore-investment-corpus'],
+    ['Investment Journey', 'Sapna Shaligram — a self-taught investor', 'Mint', 'https://www.livemint.com/money/personal-finance/stock-market-india-women-investors-in-stock-markets-mutual-funds-sip-stock-trading-11741236423049.html'],
+    ['Investment Journey', 'A young investor’s journey toward a ₹1 crore portfolio', 'Financial Express', 'https://www.financialexpress.com/money/how-this-29-year-old-made-rs-1-cr-despite-picking-very-bad-mutual-funds-4363156/'],
+    ['Investment Journey', 'RupeeMap — investor case studies', 'RupeeMap', 'https://www.rupeemap.in/case-studies'],
+    ['Investment Journey', 'Building a consistent SIP habit', 'Cafemutual', 'https://cafemutual.com/news/tarraki/29022-4-things-that-helped-this-b30-mfd-conduct-a-successful-sip-drive']
+  ];
+  const storiesEl = document.getElementById('sipStories');
+  if (storiesEl) storiesEl.innerHTML = ['Student SIP', 'Professional', 'Investment Journey'].map((category) => `<section class="sip-story-category"><h3>${category}</h3><div class="sip-story-grid">${sipStories.filter((story) => story[0] === category).map(([, title, source, url]) => `<a class="sip-story-link" href="${url}" target="_blank" rel="noopener noreferrer"><span>${title}</span><small>${source} <i class="fas fa-arrow-up-right-from-square"></i></small></a>`).join('')}</div></section>`).join('');
 
   // Load from localStorage
   const raw = localStorage.getItem(INVEST_STORAGE_KEY);
@@ -1342,7 +1426,7 @@ function initNavigation() {
   const sectionTitles = {
     'expense': 'Daily Expense Tracker',
     'savings': 'Small Savings, Big Future',
-    'invest': 'Investment & Virtual Trading',
+    'invest': 'Future Investment',
     'challenges': 'Savings Challenges'
   };
 

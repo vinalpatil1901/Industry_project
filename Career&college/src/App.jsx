@@ -13,12 +13,12 @@ import { evaluateCareers } from './utils/careerEvaluation';
 const MONEY_SECTIONS = {
   expense: 'Daily Expense Tracker',
   savings: 'Small Savings, Big Future',
-  invest: 'Investment & Virtual Trading',
+  invest: 'Future Investment',
   challenges: 'Savings Challenges',
 };
 
 const MARKETPLACE_SECTIONS = {
-  dashboard: 'Marketplace Dashboard',
+  dashboard: 'Learn & Earn',
   purchases: 'My Purchases',
   listings: 'My Listings',
 };
@@ -169,7 +169,7 @@ export default function App() {
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="font-bold text-slate-800">Campus360</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isMarketplaceArea ? 'Marketplace' : isCommunityArea ? 'Community' : isStudyArea ? 'SmartStudy' : 'Career'}</span>
+              <span className="font-semibold text-slate-600">{isMoneyArea ? 'Money Management' : isMarketplaceArea ? 'Learn & Earn' : isCommunityArea ? 'Community' : isStudyArea ? 'SmartStudy' : 'Career'}</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
               <span className="font-bold text-blue-600">{breadcrumbSection}</span>
             </div>

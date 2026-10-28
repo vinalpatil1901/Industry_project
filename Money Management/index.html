@@ -64,10 +64,10 @@
                         <span class="nav-badge-pill">₹ Goals</span>
                         <i class="fas fa-chevron-right nav-arrow"></i>
                     </li>
-                    <li class="nav-item" data-section="invest" title="Investment & Virtual Trading">
+                    <li class="nav-item" data-section="invest" title="Future Investment">
                         <div class="nav-link-content">
                             <i class="fas fa-chart-line nav-icon"></i>
-                            <span class="nav-text">Investment & Virtual Trading</span>
+                            <span class="nav-text">Future Investment</span>
                         </div>
                         <span class="nav-badge-pill">Live</span>
                         <i class="fas fa-chevron-right nav-arrow"></i>
@@ -146,11 +146,7 @@
                 <section class="content-section active" id="expense-section">
                     <!-- Search & Filter Card -->
                     <div class="filter-card">
-                        <div class="filter-header-row">
-                            <div class="filter-title-wrap">
-                                <i class="fas fa-filter filter-icon"></i>
-                                <span class="filter-heading">FILTER BY CATEGORY, KEYWORD OR DATE</span>
-                            </div>
+                        <div class="filter-header-row filter-header-row--stats">
                             <span class="filter-stats-text" id="expenseStatsCounter">Showing all recorded expenses</span>
                         </div>
                         <div class="filter-controls-row">
@@ -158,13 +154,14 @@
                                 <i class="fas fa-search search-lens"></i>
                                 <input type="text" id="expenseSearchInput" placeholder="Type category or description (e.g. Food, Metro, Books, Cafe, Rent)..." />
                             </div>
-                            <button type="button" class="btn-location-action" id="filterCurrentMonthBtn">
-                                <i class="fas fa-calendar-check"></i>
-                                <span>This Month Only</span>
-                            </button>
+                            <label class="month-filter" for="expenseMonthFilter">
+                                <i class="fas fa-calendar-alt"></i>
+                                <select id="expenseMonthFilter" aria-label="Filter expenses by month">
+                                    <option value="all">All months</option>
+                                </select>
+                            </label>
                         </div>
                         <div class="quick-chips-row">
-                            <span class="chips-label">Quick Hubs:</span>
                             <div class="chips-group" id="categoryChips">
                                 <button type="button" class="chip-item active" data-category="All">All Categories</button>
                                 <button type="button" class="chip-item" data-category="Food">Food</button>
@@ -180,7 +177,7 @@
                     <div class="metrics-grid">
                         <div class="metric-card">
                             <div class="metric-top">
-                                <span class="metric-title">Today's Spend</span>
+                                <span class="metric-title" id="dailySpendTitle">Today's Spend</span>
                                 <span class="metric-badge green">Today</span>
                             </div>
                             <div class="metric-value" id="dailyTotalAmount">₹0.00</div>
@@ -267,8 +264,8 @@
                                         <i class="fas fa-plus"></i>
                                         <span id="expenseSubmitBtnText">Add Expense</span>
                                     </button>
-                                    <button type="button" class="btn-secondary hidden" id="cancelEditBtn">
-                                        <i class="fas fa-times"></i> Cancel Edit
+                                    <button type="button" class="btn-secondary" id="editExpenseBtn">
+                                        <i class="fas fa-edit"></i> <span id="editExpenseBtnText">Edit Expense</span>
                                     </button>
                                 </div>
                             </form>
@@ -394,7 +391,7 @@
                                     </div>
                                 </div>
 
-                                <button type="button" class="btn-primary full-width" id="calcSavingsBtn" style="margin-top: 16px;">
+                                <button type="button" class="btn-primary full-width calculate-savings-btn" id="calcSavingsBtn">
                                     <i class="fas fa-calculator"></i> Calculate Compounded Savings
                                 </button>
                             </div>
@@ -465,11 +462,11 @@
                                 <div class="form-field">
                                     <label for="goalDate">Target Deadline <span class="req">*</span></label>
                                     <input type="date" id="goalDate" required />
+                                    <button type="submit" class="btn-primary goal-submit-button">
+                                        <i class="fas fa-plus"></i> Set Savings Goal
+                                    </button>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-primary" style="margin-top: 10px;">
-                                <i class="fas fa-plus"></i> Set Savings Goal
-                            </button>
                         </form>
 
                         <!-- Goals Container -->
@@ -480,9 +477,54 @@
                 </section>
 
                 <!-- ==============================================
-                     SECTION 3: INVESTMENT & VIRTUAL TRADING
+                     SECTION 3: FUTURE INVESTMENT
                      ============================================== -->
                 <section class="content-section hidden" id="invest-section">
+                    <div class="sip-learning-grid">
+                        <article class="card-panel sip-theory-card">
+                            <div class="panel-header-title">
+                                <i class="fas fa-seedling panel-icon"></i>
+                                <div>
+                                    <h2>What is a SIP?</h2>
+                                </div>
+                            </div>
+                            <p>A SIP (Systematic Investment Plan) means investing a fixed amount of money every month in a mutual fund.</p>
+                            <ul class="sip-theory-list">
+                                <li>You do not need to research and select individual investments yourself; professional fund managers manage the mutual fund.</li>
+                                <li>Over time, your money can grow through compounding, where returns may also start earning returns.</li>
+                                <li>SIPs in mutual funds reduce the need for individual investment decisions, but they still carry market risk.</li>
+                            </ul>
+                        </article>
+
+                        <article class="card-panel sip-calculator-card">
+                            <div class="panel-header-title">
+                                <i class="fas fa-calculator panel-icon"></i>
+                                <div>
+                                    <h2>SIP Calculator</h2>
+                                </div>
+                            </div>
+                            <div class="sip-input-grid">
+                                <label>Monthly investment amount (₹)<input id="sipMonthlyAmount" type="number" min="0" step="100" value="1000"></label>
+                                <label>Investment duration (years)<input id="sipYears" type="number" min="1" step="1" value="5"></label>
+                                <label>Expected annual return (%)<input id="sipAnnualReturn" type="number" min="0" step="0.1" value="10"></label>
+                            </div>
+                            <div class="sip-results" aria-live="polite">
+                                <div><span>Total invested</span><strong id="sipTotalInvested">₹0</strong></div>
+                                <div><span>Estimated returns</span><strong id="sipEstimatedReturns">₹0</strong></div>
+                                <div class="sip-final-value"><span>Estimated final value</span><strong id="sipFinalValue">₹0</strong></div>
+                            </div>
+                            <p class="sip-disclaimer"><i class="fas fa-info-circle"></i> Return is an assumption, not a guarantee. Mutual fund values can rise or fall with the market.</p>
+                        </article>
+                    </div>
+
+                    <section class="card-panel sip-stories-panel">
+                        <div class="panel-header-title">
+                            <i class="fas fa-book-reader panel-icon"></i>
+                            <div><h2>Learn from investing journeys</h2><span class="chart-month-subtitle">Open a story to study real investing habits and financial goals</span></div>
+                        </div>
+                        <div id="sipStories"></div>
+                    </section>
+
                     <!-- Portfolio Top Metrics -->
                     <div class="metrics-grid">
                         <div class="metric-card">
