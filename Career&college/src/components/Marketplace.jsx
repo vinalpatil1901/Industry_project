@@ -41,6 +41,21 @@ function toListing(row, profiles) {
 }
 
 export default function Marketplace({ activeSection, onNavigate, workspaceOffset = 0, user }) {
+  // The app session can briefly lag behind Supabase auth (for example right
+  // after signing in). Resolve the live auth user so a signed-in student is
+  // never treated as a guest.
+  const [resolvedUser, setResolvedUser] = useState(() => (user?.id ? user : null));
+  useEffect(() => {
+    if (user?.id) return undefined;
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active || !data?.user) return;
+      setResolvedUser({ id: data.user.id, name: data.user.user_metadata?.full_name || data.user.email || 'Campus360 member', email: data.user.email || '' });
+    });
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const actingUser = user?.id ? user : resolvedUser;
   const [listings, setListings] = useState([]);
   const [orders, setOrders] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -63,21 +78,19 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
   }, []);
 
   const loadMarketplace = useCallback(async () => {
-    if (!user?.id) {
-      setListings([]);
-      setOrders([]);
-      setRequests([]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setDataError('');
-    const [listingResult, orderResult, requestResult] = await Promise.all([
-      supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false }),
-      supabase.from('marketplace_orders').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('marketplace_orders').select('*').eq('seller_id', user.id).order('created_at', { ascending: false }),
-    ]);
+    const listingResult = await supabase
+      .from('marketplace_listings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const [orderResult, requestResult] = actingUser?.id
+      ? await Promise.all([
+        supabase.from('marketplace_orders').select('*').eq('buyer_id', actingUser.id).order('created_at', { ascending: false }),
+        supabase.from('marketplace_orders').select('*').eq('seller_id', actingUser.id).order('created_at', { ascending: false }),
+      ])
+      : [{ data: [], error: null }, { data: [], error: null }];
 
     const error = listingResult.error || orderResult.error || requestResult.error;
     if (error) {
@@ -97,17 +110,17 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
       const { data: profileRows } = await supabase.from('profiles').select('id, display_name').in('id', sellerIds);
       profiles = new Map((profileRows || []).map((profile) => [profile.id, profile.display_name]));
     }
-    setListings(listingResult.data.map((row) => toListing(row, profiles)));
+    setListings((listingResult.data || []).map((row) => toListing(row, profiles)));
     setOrders(orderResult.data || []);
     setRequests(requestResult.data || []);
     setLoading(false);
-  }, [user?.id]);
+  }, [actingUser?.id]);
 
   useEffect(() => { loadMarketplace(); }, [loadMarketplace]);
   useEffect(() => { setVisibleCount(6); }, [query, category, subject, priceFilter, sort]);
 
   const published = listings.filter((item) => item.status === 'published');
-  const myListings = listings.filter((item) => item.sellerId === user?.id);
+  const myListings = listings.filter((item) => item.sellerId === actingUser?.id);
   const subjects = ['Subject', 'All', ...new Set(published.map((item) => item.subject))];
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -129,14 +142,14 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
   const earnings = requests.filter((order) => order.status === 'completed').reduce((total, order) => total + Number(order.amount_inr), 0);
 
   const saveListing = async (form) => {
-    if (!user?.id) return notify('Sign in with a Campus360 account before publishing a resource.', 'error');
+    if (!actingUser?.id) return notify('Sign in with a Campus360 account before publishing a resource.', 'error');
     const physical = form.category === 'Used Books' || form.type === 'Physical used book';
     let assetPath = editing?.assetPath || null;
     let imagePath = editing?.imagePath || null;
 
     if (form.file) {
       const safeName = form.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+      const path = `${actingUser.id}/${crypto.randomUUID()}-${safeName}`;
       const { error: uploadError } = await supabase.storage.from('campus360-assets').upload(path, form.file, { contentType: form.file.type, upsert: false });
       if (uploadError) return notify(`Upload failed: ${uploadError.message}`, 'error');
       if (physical) imagePath = path;
@@ -144,7 +157,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
     }
 
     const payload = {
-      seller_id: user.id,
+      seller_id: actingUser.id,
       title: form.title.trim(),
       category: form.category,
       subject: form.subject.trim(),
@@ -161,7 +174,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
       status: 'published',
     };
     const request = editing
-      ? supabase.from('marketplace_listings').update(payload).eq('id', editing.id).eq('seller_id', user.id)
+      ? supabase.from('marketplace_listings').update(payload).eq('id', editing.id).eq('seller_id', actingUser.id)
       : supabase.from('marketplace_listings').insert(payload);
     const { error } = await request;
     if (error) return notify(`Could not save listing: ${error.message}`, 'error');
@@ -173,7 +186,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
 
   const removeListing = async (listing) => {
     if (!window.confirm(`Delete “${listing.title}”? This cannot be undone.`)) return;
-    const { error } = await supabase.from('marketplace_listings').delete().eq('id', listing.id).eq('seller_id', user.id);
+    const { error } = await supabase.from('marketplace_listings').delete().eq('id', listing.id).eq('seller_id', actingUser.id);
     if (error) return notify(`Could not delete listing: ${error.message}`, 'error');
     notify('Listing deleted.');
     loadMarketplace();
@@ -181,19 +194,19 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
 
   const togglePublished = async (listing) => {
     const status = listing.status === 'published' ? 'archived' : 'published';
-    const { error } = await supabase.from('marketplace_listings').update({ status }).eq('id', listing.id).eq('seller_id', user.id);
+    const { error } = await supabase.from('marketplace_listings').update({ status }).eq('id', listing.id).eq('seller_id', actingUser.id);
     if (error) return notify(`Could not update listing: ${error.message}`, 'error');
     notify(status === 'published' ? 'Listing published.' : 'Listing unpublished.');
     loadMarketplace();
   };
 
   const requestResource = async (listing) => {
-    if (!user?.id) return notify('Sign in to request a resource.', 'error');
-    if (listing.sellerId === user.id) return notify('You cannot request your own listing.', 'error');
+    if (!actingUser?.id) return notify('Sign in to request a resource.', 'error');
+    if (listing.sellerId === actingUser.id) return notify('You cannot request your own listing.', 'error');
     if (orders.some((order) => order.listing_id === listing.id && order.status !== 'cancelled')) return notify('You already have an access request for this resource.', 'error');
     const { error } = await supabase.from('marketplace_orders').insert({
       listing_id: listing.id,
-      buyer_id: user.id,
+      buyer_id: actingUser.id,
       seller_id: listing.sellerId,
       amount_inr: listing.price,
       status: listing.price === 0 && !isPhysical(listing) ? 'completed' : 'requested',
@@ -209,10 +222,8 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
     const { data, error } = await supabase.storage.from('campus360-assets').createSignedUrl(listing.assetPath, 60);
     if (error) return notify(`Could not open resource: ${error.message}`, 'error');
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const openListingForm = () => {
-    if (!user?.id) return notify('Guest sessions can browse only. Sign in to list a resource.', 'error');
+  };  const openListingForm = () => {
+    if (!actingUser?.id) return notify('Sign in with your Campus360 account to list a resource.', 'error');
     setEditing(null);
     setShowUpload(true);
   };
@@ -231,7 +242,7 @@ export default function Marketplace({ activeSection, onNavigate, workspaceOffset
     {activeSection === 'purchases' && <Purchases orders={orders} listings={listings} onBrowse={() => onNavigate('dashboard')} onOpen={openResource} />}
     {activeSection === 'listings' && <Listings listings={myListings} requests={requests} onEdit={(listing) => { setEditing({ ...listing, type: listing.resourceType, fileName: listing.assetPath ? 'Current file uploaded' : '', imageName: listing.imagePath ? 'Current image uploaded' : '' }); setShowUpload(true); }} onDelete={removeListing} onToggle={togglePublished} onAdd={openListingForm} />}
     {showUpload && <MarketplaceListingForm initial={editing} onClose={() => { setShowUpload(false); setEditing(null); }} onSave={saveListing} workspaceOffset={workspaceOffset} />}
-    {selected && <Details listing={selected} purchased={completedOrders.some((order) => order.listing_id === selected.id)} ownListing={selected.sellerId === user?.id} onClose={() => setSelected(null)} onRequest={() => requestResource(selected)} onOpen={() => openResource(selected)} />}
+    {selected && <Details listing={selected} purchased={completedOrders.some((order) => order.listing_id === selected.id)} ownListing={selected.sellerId === actingUser?.id} onClose={() => setSelected(null)} onRequest={() => requestResource(selected)} onOpen={() => openResource(selected)} />}
   </div>;
 }
 

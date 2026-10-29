@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { ChevronRight, LogOut, Menu, UserRound } from 'lucide-react';
+import { ChevronRight, LogIn, LogOut, Menu, UserRound } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import CareerSurvey from './components/CareerSurvey';
 import CollegeRecommendation from './components/CollegeRecommendation';
@@ -75,6 +75,7 @@ function readNavigation() {
 
 export default function App() {
   const [session, setSession] = useState(loadSession);
+  const [authUserId, setAuthUserId] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [navigation, setNavigation] = useState(readNavigation);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -129,6 +130,7 @@ export default function App() {
     const applyAuthSession = (authSession) => {
       if (!mounted || !authSession) return;
       localStorage.removeItem(SESSION_STORAGE_KEY);
+      setAuthUserId(authSession.user.id);
       setSession(toAppSession(authSession));
     };
     supabase.auth.getSession().then(({ data }) => {
@@ -138,7 +140,10 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, authSession) => {
       if (authSession) applyAuthSession(authSession);
-      else if (mounted) setSession(loadSession());
+      else if (mounted) {
+        setAuthUserId(null);
+        setSession(loadSession());
+      }
     });
     return () => {
       mounted = false;
@@ -174,9 +179,16 @@ export default function App() {
   const handleSignOut = async () => {
     if (!session?.isGuest) await supabase.auth.signOut();
     localStorage.removeItem(SESSION_STORAGE_KEY);
+    setAuthUserId(null);
     setSession(null);
     setIsMobileOpen(false);
   };
+
+  // Supabase auth is the source of truth for who is signed in. A locally saved
+  // guest session must never outrank a real account session.
+  const signedInUser = authUserId
+    ? { id: authUserId, name: session?.name || 'Campus360 student', email: session?.email || '' }
+    : (!session?.isGuest && session?.id ? session : null);
 
   if (!authReady) {
     return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Loading Campus360…</div>;
@@ -245,7 +257,7 @@ export default function App() {
               <span className="max-w-28 truncate text-xs font-bold text-slate-700">{session.name}</span>
               {session.isGuest && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800">Guest</span>}
             </div>
-            <button type="button" onClick={handleSignOut} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700" title="Sign out"><LogOut className="h-3.5 w-3.5" /><span className="hidden sm:inline">Sign out</span></button>
+            <button type="button" onClick={handleSignOut} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition ${session.isGuest ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-slate-200 text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700'}`} title={session.isGuest ? 'Sign in with your Campus360 account' : 'Sign out'}>{session.isGuest ? <LogIn className="h-3.5 w-3.5" /> : <LogOut className="h-3.5 w-3.5" />}<span className="hidden sm:inline">{session.isGuest ? 'Sign in' : 'Sign out'}</span></button>
           </div>
         </header>
 
@@ -259,10 +271,10 @@ export default function App() {
                 activeSection={navigation.section}
                 onNavigate={(section) => navigate('marketplace', section)}
                 workspaceOffset={isDesktop ? (isCollapsed ? 68 : sidebarWidth) : 0}
-                user={session.isGuest ? null : session}
+                user={signedInUser}
               />
             ) : isCommunityArea ? (
-              <LiveChat selectedCareer={selectedCareer} user={session.isGuest ? null : session} />
+              <LiveChat selectedCareer={selectedCareer} user={signedInUser} />
             ) : isStudyArea ? (
               <Suspense fallback={<div className="grid min-h-[360px] place-items-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500">Loading SmartStudy…</div>}><SmartStudy /></Suspense>
             ) : navigation.section === 'survey' ? (
