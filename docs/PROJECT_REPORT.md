@@ -34,8 +34,11 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<publishable / anon key>
 ```
 
-`Career&college/src/lib/supabase.js` throws a clear error at start-up when either
-value is missing, so a misconfigured deploy fails loudly instead of silently.
+`Career&college/src/lib/supabase.js` creates the real Supabase client when both
+values are present. If they are missing it exports a guest-only fallback whose
+auth, query and storage calls resolve with a readable "Online services are not
+configured" error instead of crashing the app, so guest sections (money
+management, SmartStudy) keep working in a local build without credentials.
 
 ---
 
@@ -166,17 +169,20 @@ value is missing, so a misconfigured deploy fails loudly instead of silently.
 * Rendered inside the React shell via iframe; React only switches sections through
   `postMessage`.
 * Four sections:
-  1. **Daily Expense Tracker** — add/edit/delete expenses, category and month
-     filters, today/monthly totals, daily average, a Chart.js category doughnut and
-     an expense history table.
+  1. **Daily Expense Tracker** — add/edit/delete expenses, category (Food,
+     Transport, Study, Entertainment, Shopping / Diet, Other, plus a custom
+     category) and month filters, today/monthly totals, daily average, a Chart.js
+     category doughnut and an expense history table.
   2. **Small Savings, Big Future** — daily savings calculator with preset amounts,
-     compounding over 30/90/180/365 days, future-value milestones and savings goals
-     with a progress tracker.
+     a user-entered expected annual return, compounding over 30/90/180/365 days,
+     future-value milestones and savings goals with a progress tracker. The result
+     is calculated on demand from the "Calculate Compounded Savings" button.
   3. **Future Investment** — SIP explainer and a live SIP projection
      (monthly amount, years, expected annual return → invested amount, estimated
      returns, total value).
   4. **Savings Challenges** — challenge cards, a daily check-in streak and
-     completed-challenge counters, with add/reset controls.
+     completed-challenge counters, with add/reset controls and an option to type a
+     custom challenge category.
 * Persistence: `localStorage` only —
   `student_money_expenses`, `student_money_goals`, `student_money_investment_v2`,
   `student_money_challenges_v2`, `student_sidebar_width`. The app does not call
@@ -191,7 +197,9 @@ value is missing, so a misconfigured deploy fails loudly instead of silently.
 * Supabase tables: `public.marketplace_listings` (title, category, subject, course,
   semester, college, description, resource type, price, condition, asset/image
   path, status) and `public.marketplace_orders` (buyer, seller, amount, status).
-  Seller names are resolved from `public.profiles`.
+  Seller names are resolved from `public.profiles`. The listing form offers the
+  four standard categories plus "+ Add your own option", which reveals a free-text
+  category field and stores that value with the listing.
 * Storage: `campus360-assets` bucket — PDFs for digital resources, images for
   physical used books. Files are uploaded into a per-user folder (`<user-id>/...`)
   and opened through short-lived signed URLs.
@@ -257,7 +265,10 @@ deliberately left out) so a fresh project has something to show.
 ## 6. Test report
 
 Environment: local Vite dev server (port 5174) in Chromium, plus a production
-`vite build`. Signed-in behaviour was verified with a locally injected Supabase
+`vite build`. The last upstream commit had replaced the Supabase client with an
+offline stub that would have disabled sign-in, the college database, the community
+and the marketplace; the real client was restored with a guest-only fallback when
+the environment variables are absent, and the backend link was re-tested afterwards. Signed-in behaviour was verified with a locally injected Supabase
 session (a real account password was not available to the test run), so the UI and
 authorisation gating are verified while live database writes still depend on the
 project's schema being applied.
@@ -276,13 +287,15 @@ project's schema being applied.
 | 10 | SmartStudy | Uploaded a `.txt` note and created a plan | Pass — 1 file / 87 words / 5 min / readiness 75, summary, flashcards and quiz all render |
 | 11 | Money → Daily Expense Tracker | Added ₹150 "Food" expense | Pass — saved to `student_money_expenses`, today's spend ₹150.00, history row visible |
 | 12 | Money → Small Savings | Created a goal (₹50,000, deadline 2027-03-31) | Pass — goal card with 0% progress appears |
+| 12b | Money → Small Savings | ₹10/day for 365 days at 8% expected return | Pass — label reads "At 8% annual return:" and the compounded value is ₹3,953.96 |
 | 13 | Money → Future Investment | SIP 2,000/month, 5 years, 12% | Pass — invested ₹1,20,000.00, returns ₹44,972.73, total ₹1,64,972.73 |
 | 14 | Money → Savings Challenges | Completed one challenge | Pass — completed counter 2 → 3 |
 | 15 | Money sections | Sidebar switching for all four sections | Pass — `expense-section`, `savings-section`, `invest-section`, `challenges-section` each activate |
 | 16 | Learn & Earn | Guest browse, "List a resource" | Pass — browsing loads without error, listing shows the sign-in message instead of the old guest error |
 | 17 | Learn & Earn | Signed-in "List a resource" | Pass — upload form opens with all fields |
 | 18 | Learn & Earn | My Listings / My Purchases | Pass — both sections render their own empty/summary states |
-| 19 | Build | `npm run build` (root) | Pass — 4.56 s, no errors |
+| 19 | Backend link | Marketplace query against the Supabase project | Pass — real client restored; `GET /rest/v1/marketplace_listings` returns 200 instead of the offline-stub error |
+| 19b | Build | `npm run build` (root) | Pass — 4.11 s, no errors |
 | 20 | Lint | `oxlint` on the React app | Pass — 0 errors, 7 pre-existing warnings (`react(set-state-in-effect)` in App, Marketplace, LiveChat) |
 
 Not covered by automation: a real end-to-end sign-in with a confirmed account, and
