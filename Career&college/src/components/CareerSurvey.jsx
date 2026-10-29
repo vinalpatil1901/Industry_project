@@ -75,6 +75,7 @@ export default function CareerSurvey({
   const [formData, setFormData] = useState(surveyData || EMPTY_PROFILE);
   const [isFormVisible, setIsFormVisible] = useState(!careerResults || careerResults.length === 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   
   // State for expanding more career options if user is not satisfied with top 3
   const [showMoreCareers, setShowMoreCareers] = useState(false);
@@ -86,11 +87,17 @@ export default function CareerSurvey({
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
     setTimeout(async () => {
-      await onSaveSurvey(formData);
-      setIsSubmitting(false);
-      setIsFormVisible(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      try {
+        await onSaveSurvey(formData);
+        setIsFormVisible(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : 'Your survey could not be saved. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }, 300);
   };
 
@@ -306,6 +313,7 @@ export default function CareerSurvey({
               </h2>
             </div>
           </div>
+          {submitError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{submitError}</div>}
 
           {/* SECTION 1: Academic Background & Performance */}
           <div className="space-y-4">

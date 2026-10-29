@@ -155,13 +155,14 @@ export default function App() {
   };
 
   const handleSaveSurvey = async (formData) => {
-    setSurveyData(formData);
     const evaluated = evaluateCareers(formData);
-    setCareerResults(evaluated);
-    setSelectedCareer(evaluated[0]);
     if (session?.id) {
-      await supabase.from('career_survey_responses').insert({ user_id: session.id, answers: formData });
+      const { error } = await supabase.from('career_survey_responses').insert({ user_id: session.id, answers: formData });
+      if (error) throw new Error(`Your survey could not be saved: ${error.message}`);
     }
+    setSurveyData(formData);
+    setCareerResults(evaluated);
+    setSelectedCareer(evaluated[0] || null);
   };
 
   const handleAuthenticate = (nextSession) => {

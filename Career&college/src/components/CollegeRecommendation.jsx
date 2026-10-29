@@ -10,6 +10,28 @@ import {
   Globe
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { ALL_COLLEGES } from '../data/collegesList';
+
+function toRecommendationCollege(college) {
+  return {
+    id: college.id,
+    name: college.name,
+    city: college.city,
+    state: college.state || '',
+    country: college.country || 'India',
+    type: college.institution_type || college.type || 'Institution',
+    rating: college.rating ? (typeof college.rating === 'number' ? `${college.rating} stars` : college.rating) : 'Not rated',
+    nirfRank: college.ranking || college.nirfRank || 'Ranking unavailable',
+    programs: Array.isArray(college.programs) ? college.programs : [],
+    careerTracks: college.career_tags || college.careerTracks || [],
+    avgPackage: college.average_package || college.avgPackage || 'Not provided',
+    highestPackage: college.highest_package || college.highestPackage || 'Not provided',
+    fees: college.annual_fees || college.fees || 'Not provided',
+    description: college.description || 'No description provided.',
+    region: college.region || `${college.city} ${college.state || ''} ${college.country || ''}`,
+    keywords: college.keywords || [],
+  };
+}
 
 export default function CollegeRecommendation({ 
   selectedCareer, 
