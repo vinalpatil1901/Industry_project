@@ -344,6 +344,26 @@ function initExpenseForm() {
   // Default date to today
   if (dateInput) dateInput.value = getTodayStr();
 
+  categoryInput?.addEventListener('change', () => {
+    if (categoryInput.value !== '__custom__') return;
+
+    const category = window.prompt('Enter your category name:')?.trim();
+    if (!category) {
+      categoryInput.value = 'Other';
+      return;
+    }
+
+    const existing = [...categoryInput.options].find((option) => option.value.toLowerCase() === category.toLowerCase());
+    if (existing) {
+      categoryInput.value = existing.value;
+      return;
+    }
+
+    const customOption = new Option(category, category);
+    categoryInput.add(customOption, categoryInput.options.length - 1);
+    categoryInput.value = category;
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const amount = parseFloat(amountInput.value);
@@ -683,7 +703,6 @@ function initSavingsSection() {
       const radio = pill.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
-        calculateSavings();
       }
     });
   }
@@ -694,11 +713,9 @@ function initSavingsSection() {
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       daysInput.value = btn.dataset.days;
-      calculateSavings();
     });
   });
 
-  daysInput.addEventListener('input', calculateSavings);
   if (calcBtn) calcBtn.addEventListener('click', calculateSavings);
 
   // New Goal form submit

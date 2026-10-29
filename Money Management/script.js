@@ -377,6 +377,26 @@ function initExpenseForm() {
   // Default date to today
   if (dateInput) dateInput.value = getTodayStr();
 
+  categoryInput?.addEventListener('change', () => {
+    if (categoryInput.value !== '__custom__') return;
+
+    const category = window.prompt('Enter your category name:')?.trim();
+    if (!category) {
+      categoryInput.value = 'Other';
+      return;
+    }
+
+    const existing = [...categoryInput.options].find((option) => option.value.toLowerCase() === category.toLowerCase());
+    if (existing) {
+      categoryInput.value = existing.value;
+      return;
+    }
+
+    const customOption = new Option(category, category);
+    categoryInput.add(customOption, categoryInput.options.length - 1);
+    categoryInput.value = category;
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const amount = parseFloat(amountInput.value);
@@ -570,6 +590,8 @@ function initSavingsSection() {
   const milestoneDesc = document.getElementById('milestoneDesc');
   const calcBtn = document.getElementById('calcSavingsBtn');
   const daysInput = document.getElementById('savingDays');
+  const annualRateInput = document.getElementById('savingAnnualRate');
+  const interestLabel = document.getElementById('savingsInterestLabel');
   const goalForm = document.getElementById('goalForm');
   const goalsContainer = document.getElementById('goalsContainer');
   const amountSelector = document.getElementById('dailyAmountSelector');
@@ -696,8 +718,8 @@ function initSavingsSection() {
     const days = Number(daysInput.value) || 90;
 
     const principal = daily * days;
-    // Compounded interest: 7% annual rate
-    const annualRate = 0.07;
+    const annualRatePercent = Math.max(0, Number(annualRateInput?.value) || 0);
+    const annualRate = annualRatePercent / 100;
     const dailyRate = annualRate / 365;
     const totalCompounded = principal * Math.pow(1 + dailyRate, days);
     const annualEquiv = daily * 365;
@@ -705,6 +727,7 @@ function initSavingsSection() {
     if (resultEl) resultEl.textContent = formatINR(principal);
     if (withInterestEl) withInterestEl.textContent = formatINR(totalCompounded);
     if (annualRateEl) annualRateEl.textContent = `${formatINR(annualEquiv)} / yr`;
+    if (interestLabel) interestLabel.textContent = `At ${annualRatePercent}% annual return:`;
 
     // Dynamic milestone based on saved amount
     if (milestoneTitle && milestoneDesc) {
@@ -734,7 +757,6 @@ function initSavingsSection() {
       const radio = pill.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
-        calculateSavings();
       }
     });
   }
@@ -745,11 +767,9 @@ function initSavingsSection() {
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       daysInput.value = btn.dataset.days;
-      calculateSavings();
     });
   });
 
-  daysInput.addEventListener('input', calculateSavings);
   if (calcBtn) calcBtn.addEventListener('click', calculateSavings);
 
   // New Goal form submit
@@ -778,7 +798,12 @@ function initSavingsSection() {
     });
   }
 
-  calculateSavings();
+  if (resultEl) resultEl.textContent = '—';
+  if (withInterestEl) withInterestEl.textContent = '—';
+  if (annualRateEl) annualRateEl.textContent = '—';
+  if (interestLabel) interestLabel.textContent = 'At annual return:';
+  if (milestoneTitle) milestoneTitle.textContent = 'Ready to calculate';
+  if (milestoneDesc) milestoneDesc.textContent = 'Choose your savings details, then click Calculate Compounded Savings to see your projection.';
   renderGoals();
 }
 
@@ -1290,6 +1315,7 @@ function initChallengesSection() {
           </div>
           <div class="ch-content" style="margin-top: 12px;">
             <h3>${escapeHtml(c.title)}</h3>
+            ${c.category ? `<div style="margin-top: 5px; font-size: 0.72rem; font-weight: 700; color: #3977d5;">${escapeHtml(c.category)}</div>` : ''}
             <p>${escapeHtml(c.desc)}</p>
           </div>
         </div>
@@ -1339,6 +1365,17 @@ function initChallengesSection() {
     renderChallengesUI();
   });
 
+  const challengeIconInput = document.getElementById('newChallengeIcon');
+  const customCategoryInput = document.getElementById('newChallengeCustomCategory');
+  if (challengeIconInput && customCategoryInput) {
+    challengeIconInput.addEventListener('change', () => {
+      const isCustom = challengeIconInput.value === '__custom_category__';
+      customCategoryInput.classList.toggle('hidden', !isCustom);
+      customCategoryInput.required = isCustom;
+      if (isCustom) customCategoryInput.focus();
+    });
+  }
+
   // Add New Challenge Form Submission
   if (newChallengeForm) {
     newChallengeForm.addEventListener('submit', (e) => {
@@ -1346,14 +1383,16 @@ function initChallengesSection() {
       const titleInput = document.getElementById('newChallengeTitle');
       const savingsInput = document.getElementById('newChallengeSavings');
       const iconInput = document.getElementById('newChallengeIcon');
+      const customCategoryInput = document.getElementById('newChallengeCustomCategory');
       const descInput = document.getElementById('newChallengeDesc');
 
       const title = titleInput.value.trim();
       const savings = Number(savingsInput.value);
-      const icon = iconInput.value;
+      const customCategory = customCategoryInput?.value.trim() || '';
+      const icon = iconInput.value === '__custom_category__' ? 'fas fa-tag' : iconInput.value;
       const desc = descInput.value.trim();
 
-      if (!title || isNaN(savings) || savings <= 0 || !desc) {
+      if (!title || isNaN(savings) || savings <= 0 || !desc || (iconInput.value === '__custom_category__' && !customCategory)) {
         alert('Please fill out all fields with valid values.');
         return;
       }
@@ -1368,12 +1407,14 @@ function initChallengesSection() {
         title,
         savings,
         icon,
+        category: customCategory,
         desc
       });
 
       saveChallengeData();
       renderChallengesUI();
       newChallengeForm.reset();
+      if (customCategoryInput) customCategoryInput.classList.add('hidden');
 
       // Scroll smoothly to the newly added challenge card
       setTimeout(() => {

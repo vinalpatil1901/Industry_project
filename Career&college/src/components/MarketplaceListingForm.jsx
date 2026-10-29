@@ -84,10 +84,14 @@ export default function MarketplaceListingForm({ initial, onClose, onSave, works
               <input value={form.title} onChange={(event) => setField('title', event.target.value)} className={fieldClass} placeholder="e.g. DBMS revision notes" />
             </Field>
             <Field label="Category">
-              <select value={form.category} onChange={(event) => { setField('category', event.target.value); if (event.target.value === 'Used Books') setField('type', 'Physical used book'); }} className={fieldClass}>
+              <select value={CATEGORIES.includes(form.category) ? form.category : '__custom__'} onChange={(event) => { const category = event.target.value; setField('category', category === '__custom__' ? '' : category); if (category === 'Used Books') setField('type', 'Physical used book'); }} className={fieldClass}>
                 {CATEGORIES.map((item) => <option key={item}>{item}</option>)}
+                <option value="__custom__">+ Add your own option</option>
               </select>
             </Field>
+            {!CATEGORIES.includes(form.category) && <Field label="Your category" error={errors.category}>
+              <input value={form.category} onChange={(event) => setField('category', event.target.value)} className={fieldClass} placeholder="Enter a category" required />
+            </Field>}
             <Field label="Subject" error={errors.subject}>
               <input value={form.subject} onChange={(event) => setField('subject', event.target.value)} className={fieldClass} placeholder="e.g. Database Management Systems" />
             </Field>

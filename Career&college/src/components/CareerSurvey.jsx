@@ -55,7 +55,7 @@ function SurveySelect({ value, onValueChange, children, required = true }) {
           <option value="" disabled>Select an option</option>
           {children}
           {isCustomValue && <option value={value}>{value}</option>}
-          <option value={CUSTOM_OPTION_VALUE}>＋ Add your own option</option>
+          <option value={CUSTOM_OPTION_VALUE}>+ Add your own option</option>
         </select>
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
       </div>

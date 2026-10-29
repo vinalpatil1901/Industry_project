@@ -242,7 +242,9 @@
                                             <option value="Transport">Transport</option>
                                             <option value="Study">Study</option>
                                             <option value="Entertainment">Entertainment</option>
+                                            <option value="Shopping / Diet">Shopping / Diet</option>
                                             <option value="Other">Other</option>
+                                            <option value="__custom__">+ Add your own option</option>
                                         </select>
                                     </div>
                                 </div>
@@ -378,16 +380,22 @@
                                     </label>
                                 </div>
 
-                                <div class="form-field" style="margin-top: 18px;">
-                                    <label for="savingDays">Time Duration (Days):</label>
-                                    <div class="input-with-button">
-                                        <input type="number" id="savingDays" min="1" max="1825" value="90" />
-                                        <div class="preset-duration-chips">
-                                            <button type="button" class="preset-btn" data-days="30">30d (1 mo)</button>
-                                            <button type="button" class="preset-btn active" data-days="90">90d (1 term)</button>
-                                            <button type="button" class="preset-btn" data-days="180">180d (Sem)</button>
-                                            <button type="button" class="preset-btn" data-days="365">365d (1 yr)</button>
+                                <div class="savings-input-row" style="margin-top: 18px;">
+                                    <div class="form-field">
+                                        <label for="savingDays">Time Duration (Days):</label>
+                                        <div class="input-with-button">
+                                            <input type="number" id="savingDays" min="1" max="1825" value="90" />
+                                            <div class="preset-duration-chips">
+                                                <button type="button" class="preset-btn" data-days="30">30d (1 mo)</button>
+                                                <button type="button" class="preset-btn active" data-days="90">90d (1 term)</button>
+                                                <button type="button" class="preset-btn" data-days="180">180d (Sem)</button>
+                                                <button type="button" class="preset-btn" data-days="365">365d (1 yr)</button>
+                                            </div>
                                         </div>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="savingAnnualRate">Expected Annual Return (%):</label>
+                                        <input type="number" id="savingAnnualRate" min="0" max="100" step="0.1" placeholder="e.g. 7" />
                                     </div>
                                 </div>
 
@@ -415,7 +423,7 @@
 
                                 <div class="compounding-stat-row">
                                     <div class="comp-item">
-                                        <span class="comp-title">At 7% Annual FD/Index:</span>
+                                        <span class="comp-title" id="savingsInterestLabel">At annual return:</span>
                                         <span class="comp-val" id="savingsWithInterest">₹1,831.50</span>
                                     </div>
                                     <div class="comp-item">
@@ -747,10 +755,12 @@
                                             <option value="fas fa-utensils">Home Meal / Canteen</option>
                                             <option value="fas fa-walking">Walking / Commute</option>
                                             <option value="fas fa-coffee">DIY Coffee / Tea</option>
-                                            <option value="fas fa-shopping-bag">Shopping Diet</option>
+                                            <option value="fas fa-shopping-bag">Shopping / Diet</option>
                                             <option value="fas fa-bolt">Micro Saver</option>
                                             <option value="fas fa-book">Library / Study First</option>
+                                            <option value="__custom_category__">+ Add your own option</option>
                                         </select>
+                                        <input type="text" id="newChallengeCustomCategory" placeholder="Enter your category" class="hidden" />
                                     </div>
                                 </div>
                                 <div class="form-field">
